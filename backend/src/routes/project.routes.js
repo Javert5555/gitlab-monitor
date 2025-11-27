@@ -1,14 +1,11 @@
-const projectRouter = require('express').Router();
+// src/routes/project.routes.js
+const router = require('express').Router();
 const projectCtrl = require('../controllers/project.controller');
-const securityCtrl = require('../controllers/security.controller');
 
+// GET /api/projects  => list from DB
+router.get('/', projectCtrl.getProjectsList);
 
-// Returns all projects with aggregated risk counts
-projectRouter.get('/', projectCtrl.getProjectsWithRiskCounts);
+// GET /api/projects/:projectId => details from DB
+router.get('/:projectId', projectCtrl.getProjectDetails);
 
-
-// Returns full detail for a specific project
-projectRouter.get('/:projectId', securityCtrl.getProjectSecurityDetails);
-
-
-module.exports = projectRouter;
+module.exports = router;

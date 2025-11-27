@@ -1,30 +1,27 @@
-const cron = require('cron');
-const { Project } = require('../models/index.model');
-const scanService = require('../services/scanService');
-const { ScanResult } = require('../models/index.model');
+// src/config/cron.js
+const CronJob = require('cron').CronJob;
+const projectCtrl = require('../controllers/project.controller');
 
-const job = new cron.CronJob(
-  '0 */30 * * * *', // каждые 30 минут
-  async () => {
-    console.log('⏳ Running scheduled CI/CD security scan...');
+// Cron expression: every 30 minutes -> '0 */30 * * * *' (second, minute, hour...)
+const job = new CronJob('0 */30 * * * *', async () => {
+  console.log('Cron: starting scheduled full scan (every 30 minutes)');
+  try {
+    await projectCtrl.fullScan(); // fullScan вернёт объект, но тут без res
+    console.log('Cron: full scan finished');
+  } catch (err) {
+    console.error('Cron: full scan failed', err);
+  }
+}, null, false, 'UTC'); // do not auto-start; start explicitly in server.js
 
-    const projects = await Project.findAll();
-
-    for (const project of projects) {
-      const result = await scanService.scanProject(project);
-
-      await ScanResult.create({
-        projectId: project.id,
-        results: result,
-        summary: scanService.buildSummary(result)
-      });
-    }
-
-    console.log('✅ Scheduled scan completed.');
-  },
-  null,
-  true,
-  'UTC'
-);
+// Выполнить initial full scan сразу при старте (не блокируя сервер)
+(async () => {
+  try {
+    console.log('Initial sync + scan on startup');
+    await projectCtrl.fullScan();
+    console.log('Initial sync + scan completed');
+  } catch (err) {
+    console.error('Initial sync + scan failed', err);
+  }
+})();
 
 module.exports = job;

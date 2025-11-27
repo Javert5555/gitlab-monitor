@@ -1,7 +1,11 @@
+// src/routes/scan.routes.js
 const router = require('express').Router();
-const ctrl = require('../controllers/scan.controller');
+const scanCtrl = require('../controllers/scan.controller');
 
-router.post('/:projectId', ctrl.scanProject);
-router.get('/:projectId/history', ctrl.getScanHistory);
+// POST /api/scan/full  -> manual full scan
+router.post('/full', scanCtrl.triggerFullScan);
+
+// POST /api/scan/:projectId -> scan single project
+router.post('/:projectId', scanCtrl.scanOneProject);
 
 module.exports = router;

@@ -1,34 +1,23 @@
+// src/models/index.model.js
 const { sequelize } = require('../config/database');
-
 const User = require('./user.model');
 const Project = require('./project.model');
 const ScanResult = require('./scanResult.model');
 
-// Project → ScanResult
-Project.hasMany(ScanResult, { foreignKey: 'projectId' });
+// Associations
+Project.hasMany(ScanResult, { foreignKey: 'projectId', onDelete: 'CASCADE' });
 ScanResult.belongsTo(Project, { foreignKey: 'projectId' });
 
-// Sync
+// Sync helper
 const syncModels = async () => {
+  // Используем alter:true чтобы мигрировать schema автоматически (в dev-среде).
   await sequelize.sync({ alter: true });
 };
 
-
-// Синхронизация моделей с базой данных
-// const syncModels = async () => {
-//   try {
-//     await sequelize.sync({ force: false });
-//     console.log(' Database models synchronized successfully.');
-//   } catch (error) {
-//     console.error('Error synchronizing database models:', error);
-//   }
-// };
-
-
 module.exports = {
+  sequelize,
+  syncModels,
   User,
   Project,
-  ScanResult,
-  sequelize,
-  syncModels
+  ScanResult
 };

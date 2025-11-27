@@ -1,32 +1,35 @@
-const { ScanResult, Project } = require('../models/index.model');
+// src/controllers/scan.controller.js
+const { Project, ScanResult } = require('../models/index.model');
 const scanService = require('../services/scanService');
 
 module.exports = {
-  scanProject: async (req, res) => {
-    const { projectId } = req.params;
+  // POST /api/scan/:projectId  -> scan single project and save result
+  scanOneProject: async (req, res) => {
+    try {
+      const id = req.params.projectId;
+      const project = await Project.findByPk(id);
+      if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const project = await Project.findByPk(projectId);
-    if (!project) return res.status(404).json({ message: 'Project not found' });
+      const results = await scanService.scanProject(project);
+      const summary = scanService.buildSummary(results);
 
-    const result = await scanService.scanProject(project);
+      const record = await ScanResult.create({
+        projectId: project.id,
+        results,
+        summary,
+        scannedAt: new Date()
+      });
 
-    await ScanResult.create({
-      projectId,
-      results: result,
-      summary: scanService.buildSummary(result)
-    });
-
-    res.json(result);
+      res.json({ ok: true, projectId: project.id, scanId: record.id, summary });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Scan failed' });
+    }
   },
 
-  getScanHistory: async (req, res) => {
-    const { projectId } = req.params;
-    const items = await ScanResult.findAll({
-      where: { projectId },
-      order: [['createdAt', 'DESC']],
-      limit: 20
-    });
-
-    res.json(items);
+  // POST /api/scan/full  -> manual full scan trigger
+  triggerFullScan: async (req, res) => {
+    const projectCtrl = require('./project.controller');
+    return projectCtrl.fullScan(req, res);
   }
 };

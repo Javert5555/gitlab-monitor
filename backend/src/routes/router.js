@@ -1,10 +1,9 @@
+// src/routes/router.js
 const express = require('express');
 const router = express.Router();
 
-
-router.use('/auth', require('./auth.routes'));
 router.use('/projects', require('./project.routes'));
-router.use('/security', require('./security.routes'));
+router.use('/scan', require('./scan.routes'));
 
-
+// auth/routes or other routes can be added as needed
 module.exports = router;

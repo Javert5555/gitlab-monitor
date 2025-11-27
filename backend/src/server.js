@@ -1,76 +1,42 @@
 // server.js
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
 require('dotenv').config();
-
-const { sequelize } = require('./config/database');
+const express = require('express');
+const morgan = require('morgan');
+const helmet = require('helmet');
+const cors = require('cors');
+const { sequelize, syncModels } = require('./models/index.model');
 const router = require('./routes/router');
-const { syncModels } = require('./models/index.model');
-const syncProjects = require('./services/syncProjects');
-
-
-// delete later
-// const riskDetector = require('./services/riskDetector');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(helmet());
 app.use(cors());
-app.use(morgan('combined'));
-app.use(express.json());
 
-// Routes
+app.use(express.json());
+app.use(morgan('dev'));
+app.use(helmet());
+
 app.use('/api', router);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+const PORT = process.env.PORT || 3000;
 
-syncModels().then(() => {
-  console.log("📦 DB synced");
-  app.listen(3000, () => console.log("Server started on 3000"));
-});
-
-(async () => {
-  await syncModels();  // создаёт таблицы
-  await syncProjects(); // импортирует проекты GitLab
-})();
-
-// Инициализация и запуск приложения
-async function startServer() {
+async function start() {
   try {
-    // Подключаемся к базе данных
+    // Установить соединение и синхронизировать модели
     await sequelize.authenticate();
-    console.log('Database connection established successfully.');
-
+    console.log('Database connected');
+    await syncModels(); // sync models (alter true in implementation)
+    // Запуск сервера
     app.listen(PORT, () => {
-      console.log(`CI/CD Security Monitor is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
+      console.log(`Server listening on port ${PORT}`);
     });
-  } catch (error) {
-    console.error('Unable to start the application:', error);
+
+    // Импорт и запуск планировщика (он сам запускает initial full sync + запустит cron)
+    const scheduler = require('./config/cron');
+    scheduler.start(); // экспортируем объект CronJob с методом start
+  } catch (err) {
+    console.error('Failed to start server:', err);
     process.exit(1);
   }
 }
 
-// Обработка graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await sequelize.close();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await sequelize.close();
-  process.exit(0);
-});
-
-// Запускаем сервер
-startServer();
+start();
