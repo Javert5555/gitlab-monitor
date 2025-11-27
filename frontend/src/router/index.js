@@ -1,31 +1,25 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Dashboard from '../views/Dashboard.vue'
-import Projects from '../views/Projects.vue'
-import ProjectDetails from '../views/ProjectDetails.vue'
-// import Scans from '../views/Scans.vue'
+import HomeView from '../views/HomeView.vue'
+import ProjectsView from '../views/ProjectsView.vue'
+import ProjectDetailView from '../views/ProjectDetailView.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'Dashboard',
-    component: Dashboard
+    name: 'home',
+    component: HomeView
   },
   {
     path: '/projects',
-    name: 'Projects',
-    component: Projects
+    name: 'projects',
+    component: ProjectsView
   },
   {
-    path: '/projects/:id',
-    name: 'ProjectDetails',
-    component: ProjectDetails,
+    path: '/projects/:projectId',
+    name: 'project-detail',
+    component: ProjectDetailView,
     props: true
-  },
-  // {
-  //   path: '/scans',
-  //   name: 'Scans',
-  //   component: Scans
-  // }
+  }
 ]
 
 const router = createRouter({
