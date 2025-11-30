@@ -17,7 +17,8 @@ const job = new CronJob('0 */30 * * * *', async () => {
 (async () => {
   try {
     console.log('Initial sync + scan on startup');
-    await projectCtrl.fullScan();
+    // uncomment later
+    // await projectCtrl.fullScan();
     console.log('Initial sync + scan completed');
   } catch (err) {
     console.error('Initial sync + scan failed', err);
