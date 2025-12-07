@@ -14,11 +14,11 @@
       </div>
       <div class="stat-card risk-stat">
         <div class="stat-number">{{ store.totalRisks }}</div>
-        <div class="stat-label">Общее количество рисков</div>
+        <div class="stat-label">Общее количество активных угроз</div>
       </div>
       <div class="stat-card high-risk-stat">
         <div class="stat-number">{{ store.highRiskProjects.length }}</div>
-        <div class="stat-label">Проектов с рисками</div>
+        <div class="stat-label">Проектов с активными угрозами</div>
       </div>
     </div>
 
@@ -27,8 +27,23 @@
         @click="triggerScan" 
         :disabled="store.loading"
         class="scan-button"
+        :class="{ 'loading': store.loading }"
       >
-        {{ store.loading ? 'Сканирование...' : 'Запустить полное сканирование' }}
+        <span v-if="store.loading" class="button-loading">
+          <span class="spinner"></span>
+          Сканирование...
+        </span>
+        <span v-else>
+          Запустить полное сканирование
+        </span>
+      </button>
+      
+      <button 
+        @click="refreshProjects" 
+        :disabled="store.loading"
+        class="refresh-button"
+      >
+        Обновить данные
       </button>
     </div>
 
@@ -40,7 +55,7 @@
       <h2>OWASP Top 10 CI/CD Security Risks</h2>
       <div class="risks-list">
         <div v-for="risk in owaspRisks" :key="risk.id" class="risk-item">
-          <strong>SEC{{ risk.id }}:</strong> {{ risk.description }}
+          <strong>CICD-SEC-{{ risk.id }}:</strong> {{ risk.description }}
         </div>
       </div>
     </div>
@@ -54,20 +69,28 @@ import { useProjectStore } from '../stores/project'
 const store = useProjectStore()
 
 const owaspRisks = [
-  { id: 1, description: 'Инъекции в пайплайны' },
-  { id: 2, description: 'Утечки секретов' },
-  { id: 3, description: 'Небезопасное хранение артефактов' },
-  { id: 4, description: 'Отсутствие контроля доступа' },
-  { id: 5, description: 'Небезопасная конфигурация' },
-  { id: 6, description: 'Уязвимости зависимостей' },
-  { id: 7, description: 'Небезопасные настройки контейнеров' },
-  { id: 8, description: 'Недостаточный мониторинг' },
-  { id: 9, description: 'Небезопасное управление секретами' },
-  { id: 10, description: 'Использование устаревших компонентов' }
+  { id: 1, description: 'Insufficient Flow Control Mechanisms / Недостаточные механизмы управления потоком' },
+  { id: 2, description: 'Inadequate Identity and Access Management / Неадекватное управление идентификацией и доступом' },
+  { id: 3, description: 'Dependency Chain Abuse / Злоупотребление цепочкой зависимостей' },
+  { id: 4, description: 'Poisoned Pipeline Execution (PPE) / Выполнение «отравленного» pipeline' },
+  { id: 5, description: 'Insufficient PBAC (Pipeline-Based Access Controls) / Недостаточный контроль доступа конвейера' },
+  { id: 6, description: 'Insufficient Credential Hygiene / Недостаточная гигиена учетных данных' },
+  { id: 7, description: 'Insecure System Configuration / Небезопасная конфигурация системы' },
+  { id: 8, description: 'Ungoverned Usage of 3rd Party Services / Нерегулируемое использование сторонних сервисов' },
+  { id: 9, description: 'Improper Artifact Integrity Validation / Ненадлежащая проверка целостности артефактов' },
+  { id: 10, description: 'Insufficient Logging and Visibility / Недостаточное логирование и видимость' }
 ]
 
 const triggerScan = async () => {
-  await store.triggerFullScan()
+  try {
+    await store.triggerFullScan()
+  } catch (error) {
+    // Ошибка уже обработана в store
+  }
+}
+
+const refreshProjects = async () => {
+  await store.refreshProjectsWithToast()
 }
 
 onMounted(() => {
@@ -133,12 +156,14 @@ onMounted(() => {
 }
 
 .actions-section {
-  text-align: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
   margin-bottom: 3rem;
+  flex-wrap: wrap;
 }
 
-.scan-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.scan-button, .refresh-button {
   color: white;
   border: none;
   padding: 1rem 2rem;
@@ -146,16 +171,54 @@ onMounted(() => {
   font-size: 1.1rem;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.scan-button:hover:not(:disabled) {
+.scan-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.scan-button.loading {
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+}
+
+.refresh-button {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+}
+
+.scan-button:hover:not(:disabled),
+.refresh-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
 
-.scan-button:disabled {
+.scan-button:disabled,
+.refresh-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+.button-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .error-message {

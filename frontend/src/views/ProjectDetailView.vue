@@ -1,6 +1,7 @@
 <template>
   <div class="project-detail-view">
     <div v-if="store.loading && !store.currentProject" class="loading">
+      <div class="spinner"></div>
       Загрузка данных проекта...
     </div>
 
@@ -13,15 +14,37 @@
               {{ store.currentProject.project.url }}
             </a>
           </p>
+          <div class="project-meta">
+            <span class="meta-item">
+              GitLab ID: {{ store.currentProject.project.gitlabProjectId }}
+            </span>
+            <span class="meta-item">
+              Сканирований: {{ store.currentProject.scans?.length || 0 }}
+            </span>
+          </div>
         </div>
         <div class="header-actions">
           <button 
             @click="scanProject" 
             :disabled="store.loading"
             class="scan-button"
+            :class="{ 'loading': store.loading }"
           >
-            {{ store.loading ? 'Сканирование...' : 'Сканировать проект' }}
+            <span v-if="store.loading" class="button-loading">
+              <span class="spinner"></span>
+              Сканирование...
+            </span>
+            <span v-else>
+              Сканировать проект
+            </span>
           </button>
+          <!-- <button 
+            @click="refreshProject" 
+            :disabled="store.loading"
+            class="refresh-button"
+          >
+            Обновить
+          </button> -->
         </div>
       </div>
 
@@ -57,8 +80,16 @@ const fetchProjectDetails = () => {
 }
 
 const scanProject = async () => {
-  await store.scanSingleProject(projectId)
+  try {
+    await store.scanSingleProject(projectId)
+  } catch (error) {
+    // Ошибка уже обработана в store
+  }
 }
+
+// const refreshProject = async () => {
+//   await fetchProjectDetails()
+// }
 
 onMounted(() => {
   fetchProjectDetails()
@@ -82,6 +113,19 @@ watch(() => route.params.projectId, (newProjectId) => {
   padding: 3rem;
   font-size: 1.2rem;
   color: #7f8c8d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 .project-header {
@@ -101,29 +145,92 @@ watch(() => route.params.projectId, (newProjectId) => {
 .project-url a {
   color: #3498db;
   text-decoration: none;
+  font-size: 1.1rem;
 }
 
 .project-url a:hover {
   text-decoration: underline;
 }
 
-.scan-button {
-  background: #e67e22;
+.project-meta {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.meta-item {
+  background: #ecf0f1;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.scan-button, .refresh-button {
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.scan-button {
+  background: #e67e22;
+}
+
+.scan-button.loading {
+  background: #95a5a6;
 }
 
 .scan-button:hover:not(:disabled) {
   background: #d35400;
 }
 
-.scan-button:disabled {
+.refresh-button {
+  background: #3498db;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.scan-button:disabled,
+.refresh-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.button-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.button-loading .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .error-message {

@@ -8,7 +8,7 @@
           :disabled="store.loading"
           class="refresh-button"
         >
-          {{ store.loading ? 'Обновление...' : 'Обновить' }}
+          {{ store.loading ? 'Обновление...' : 'Обновить список' }}
         </button>
       </div>
     </div>
@@ -33,7 +33,7 @@ import ProjectList from '../components/ProjectList.vue'
 const store = useProjectStore()
 
 const refreshProjects = () => {
-  store.fetchProjects()
+  store.refreshProjectsWithToast()
 }
 
 onMounted(() => {
@@ -67,6 +67,9 @@ onMounted(() => {
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .refresh-button:hover:not(:disabled) {

@@ -1,10 +1,10 @@
-const gitLabService = require('./gitlabService')
+// const gitLabService = require('./gitlabService')
 
-const riskDetector = async () => {
-  const allProjects = await gitLabService.getAllProjects()
-  console.log(allProjects)
-}
+// const riskDetector = async () => {
+//   const allProjects = await gitLabService.getAllProjects()
+//   console.log(allProjects)
+// }
 
-riskDetector()
+// riskDetector()
 
-module.exports = riskDetector;
+// module.exports = riskDetector;

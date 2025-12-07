@@ -431,4 +431,7 @@ module.exports = {
       null
     );
   },
+
+  getDeployKeys: async (projectId) =>
+    safeRequest(() => api.get(`/projects/${projectId}/deploy_keys`), []),
 };

@@ -1,41 +1,5 @@
 <template>
   <div class="project-detail">
-    <!-- Последние сканирования -->
-    <div class="section">
-      <h2>История сканирований</h2>
-      <div v-if="!project.scans || project.scans.length === 0" class="empty-state">
-        Сканирования не проводились
-      </div>
-      <div v-else class="scans-list">
-        <div 
-          v-for="scan in project.scans" 
-          :key="scan.id"
-          class="scan-item"
-        >
-          <div class="scan-header">
-            <span class="scan-date">{{ formatDate(scan.scannedAt) }}</span>
-            <RiskBadge :count="scan.summary?.totalRisks || 0" />
-          </div>
-          <div class="scan-summary">
-            <div class="risk-breakdown">
-              <span v-if="scan.summary?.critical" class="risk-count critical">
-                C: {{ scan.summary.critical }}
-              </span>
-              <span v-if="scan.summary?.high" class="risk-count high">
-                H: {{ scan.summary.high }}
-              </span>
-              <span v-if="scan.summary?.medium" class="risk-count medium">
-                M: {{ scan.summary.medium }}
-              </span>
-              <span v-if="scan.summary?.low" class="risk-count low">
-                L: {{ scan.summary.low }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Детали последнего сканирования -->
     <div v-if="latestScan" class="section">
       <h2>Результаты последнего сканирования</h2>
@@ -79,6 +43,43 @@
         </div>
       </div>
     </div>
+
+    <!-- Последние сканирования -->
+    <div class="section">
+      <h2>История сканирований</h2>
+      <div v-if="!project.scans || project.scans.length === 0" class="empty-state">
+        Сканирования не проводились
+      </div>
+      <div v-else class="scans-list">
+        <div 
+          v-for="scan in project.scans" 
+          :key="scan.id"
+          class="scan-item"
+        >
+          <div class="scan-header">
+            <span class="scan-date">{{ formatDate(scan.scannedAt) }}</span>
+            <RiskBadge :count="scan.summary?.totalRisks || 0" />
+          </div>
+          <div class="scan-summary">
+            <div class="risk-breakdown">
+              <span v-if="scan.summary?.critical" class="risk-count critical">
+                C: {{ scan.summary.critical }}
+              </span>
+              <span v-if="scan.summary?.high" class="risk-count high">
+                H: {{ scan.summary.high }}
+              </span>
+              <span v-if="scan.summary?.medium" class="risk-count medium">
+                M: {{ scan.summary.medium }}
+              </span>
+              <span v-if="scan.summary?.low" class="risk-count low">
+                L: {{ scan.summary.low }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
