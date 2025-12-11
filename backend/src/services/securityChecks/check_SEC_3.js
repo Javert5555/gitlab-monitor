@@ -27,12 +27,21 @@
 
 const axios = require('axios');
 
-module.exports = async function checkSEC3(projectId, gitlab) {
+module.exports = async function checkSEC3(projectId, project, gitlab) {
+  // const repoTree = await gitlab.getRepositoryTree(projectId, { recursive: true });
+  // const gitlabCIRaw = await gitlab.getGitLabCIFile(projectId);
+
+  const {
+    repoTree,
+    gitlabCIRaw,
+  } = project
+
+
+
   const results = [];
   
   try {
     // 1. Проверяем наличие файлов зависимостей
-    const repoTree = await gitlab.getRepositoryTree(projectId, { recursive: true });
     
     const dependencyFiles = {
       'package.json': { manager: 'npm', found: false },
@@ -88,10 +97,11 @@ module.exports = async function checkSEC3(projectId, gitlab) {
     // 3. Анализируем package.json если он есть
     if (dependencyFiles['package.json'].found) {
       try {
-        const packageJsonContent = await gitlab.getRawFile(projectId, 'package.json');
-        const packageJson = JSON.parse(packageJsonContent);
+        // const packageJsonContent = await gitlab.getRawFile(projectId, 'package.json');
+        // const packageJson = JSON.parse(packageJsonContent);
+        const packageJson = await gitlab.getRawFile(projectId, 'package.json');
         
-        console.log('packageJsonContent', packageJsonContent)
+        // console.log('packageJsonContent', packageJsonContent)
         console.log('packageJson', packageJson)
 
         // Проверка на использование публичных реестров
@@ -186,12 +196,11 @@ module.exports = async function checkSEC3(projectId, gitlab) {
     if (ciConfigs.length > 0) {
       // Проверяем наличие стадий сканирования зависимостей
       try {
-        const gitlabCI = await gitlab.getGitLabCIFile(projectId);
-        const hasDependencyCheck = gitlabCI.includes('dependency') || 
-                                   gitlabCI.includes('snyk') || 
-                                   gitlabCI.includes('trivy') || 
-                                   gitlabCI.includes('owasp') ||
-                                   gitlabCI.includes('scan') && gitlabCI.includes('dependencies');
+        const hasDependencyCheck = gitlabCIRaw.includes('dependency') || 
+                                   gitlabCIRaw.includes('snyk') || 
+                                   gitlabCIRaw.includes('trivy') || 
+                                   gitlabCIRaw.includes('owasp') ||
+                                   gitlabCIRaw.includes('scan') && gitlabCIRaw.includes('dependencies');
         
         results.push({
           item: "Сканирование зависимостей в CI/CD",

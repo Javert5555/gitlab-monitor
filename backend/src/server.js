@@ -32,7 +32,7 @@ async function start() {
 
     // Импорт и запуск планировщика (он сам запускает initial full sync + запустит cron)
     const scheduler = require('./config/cron');
-    scheduler.start(); // экспортируем объект CronJob с методом start
+    // scheduler.start(); // экспортируем объект CronJob с методом start
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

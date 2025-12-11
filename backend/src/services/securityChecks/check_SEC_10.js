@@ -16,15 +16,19 @@
 //   };
 // };
 
-module.exports = async function checkSEC10(projectId, gitlab) {
+module.exports = async function checkSEC10(projectId, projectData, gitlab) {
+  const {
+    gitlabCIRaw = null,
+    pipelines = [],
+    projectDetails = {},
+    repoTree = []
+  } = projectData;
+
   const results = [];
-  
+
   try {
     // 1. Проверка наличия CI/CD конфигурации
-    let gitlabCI = null;
-    try {
-      gitlabCI = await gitlab.getRawFile(projectId, '.gitlab-ci.yml');
-    } catch (error) {
+    if (!gitlabCIRaw) {
       results.push({
         item: "CI/CD конфигурация",
         status: "INFO",
@@ -39,7 +43,7 @@ module.exports = async function checkSEC10(projectId, gitlab) {
     }
     
     // 2. Анализ CI/CD конфигурации на предмет логирования
-    const lines = gitlabCI.split('\n');
+    const lines = gitlabCIRaw.split('\n');
     
     // Проверка: Наличие явного логирования
     const hasExplicitLogging = lines.some(line => 
@@ -182,11 +186,10 @@ module.exports = async function checkSEC10(projectId, gitlab) {
     });
     
     // 9. Проверка настройки retention логов в GitLab
-    const pipelines = await gitlab.getProjectPipelines(projectId, { per_page: 5 });
-    
-    if (pipelines.length > 0) {
+    if (pipelines && pipelines.length > 0) {
       // Проверяем, доступны ли логи старых пайплайнов
       const oldPipelines = pipelines.filter(p => {
+        if (!p.created_at) return false;
         const pipelineDate = new Date(p.created_at);
         const now = new Date();
         const ageInDays = (now - pipelineDate) / (1000 * 60 * 60 * 24);
@@ -204,8 +207,6 @@ module.exports = async function checkSEC10(projectId, gitlab) {
     }
     
     // 10. Проверка настроек проекта для логирования
-    const projectDetails = await gitlab.getProjectDetails(projectId);
-    
     // Проверка доступных функций логирования GitLab
     const gitlabLoggingFeatures = {
       hasContainerRegistry: projectDetails.container_registry_enabled || false,
@@ -312,19 +313,19 @@ module.exports = async function checkSEC10(projectId, gitlab) {
     });
     
     // 16. Проверка репозитория на наличие конфигураций логирования
-    try {
-      const repoTree = await gitlab.getRepositoryTree(projectId, { recursive: true });
+    if (repoTree && repoTree.length > 0) {
       const loggingConfigFiles = repoTree.filter(file => 
-        file.name.includes('log') ||
-        file.name.includes('logger') ||
-        file.name.includes('logging') ||
-        file.name === '.env' ||
-        file.name === 'docker-compose.yml' ||
-        file.name === 'kubernetes' ||
-        file.name.includes('config') && (
-          file.name.endsWith('.yml') || 
-          file.name.endsWith('.yaml') || 
-          file.name.endsWith('.json')
+        file.name && (
+          file.name.includes('log') ||
+          file.name.includes('logger') ||
+          file.name.includes('logging') ||
+          file.name === '.env' ||
+          file.name === 'docker-compose.yml' ||
+          file.name.includes('config') && (
+            file.name.endsWith('.yml') || 
+            file.name.endsWith('.yaml') || 
+            file.name.endsWith('.json')
+          )
         )
       ).slice(0, 10);
       
@@ -336,43 +337,29 @@ module.exports = async function checkSEC10(projectId, gitlab) {
           severity: "low"
         });
       }
-    } catch (error) {
-      // Не удалось получить список файлов
     }
     
     // 17. Проверка на наличие документации по логированию
-    try {
-      const repoTree = await gitlab.getRepositoryTree(projectId);
+    if (repoTree && repoTree.length > 0) {
       const docsFiles = repoTree.filter(file => 
-        file.name.toLowerCase().includes('readme') ||
-        file.name.toLowerCase().includes('docs') ||
-        file.name.toLowerCase().includes('logging') ||
-        file.name.toLowerCase().includes('monitoring')
+        file.name && (
+          file.name.toLowerCase().includes('readme') ||
+          file.name.toLowerCase().includes('docs') ||
+          file.name.toLowerCase().includes('logging') ||
+          file.name.toLowerCase().includes('monitoring')
+        )
       );
       
       let hasLoggingDocs = false;
-      for (const file of docsFiles.slice(0, 3)) {
-        try {
-          const content = await gitlab.getRawFile(projectId, file.path);
-          if (content.includes('log') || content.includes('monitor') || content.includes('audit')) {
-            hasLoggingDocs = true;
-            break;
-          }
-        } catch (error) {
-          continue;
-        }
-      }
+      // Для этой проверки нужны дополнительные запросы к GitLab API
+      // Оставляем как INFO, что требуется дополнительная проверка
       
       results.push({
         item: "Документация по логированию и мониторингу",
-        status: hasLoggingDocs ? "OK" : "INFO",
-        details: hasLoggingDocs
-          ? "Обнаружена документация по логированию и мониторингу."
-          : "Не обнаружена документация по логированию. Рекомендуется создать.",
+        status: "INFO",
+        details: "Для проверки документации требуется дополнительный анализ содержимого файлов.",
         severity: "low"
       });
-    } catch (error) {
-      // Не удалось проверить документацию
     }
     
   } catch (error) {

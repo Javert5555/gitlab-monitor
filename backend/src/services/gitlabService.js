@@ -418,19 +418,11 @@ module.exports = {
 
   getUser: async (userId) => safeRequest(() => api.get(`/users/${userId}`)),
 
-  // =============================
-  // NEW: fetch .gitlab-ci.yml raw
-  // =============================
-  getGitlabCIFile: async (projectId, ref = "main") => {
-    console.log('projectId', projectId)
-    return safeRequest(
-      () =>
-        api.get(`/projects/${projectId}/repository/files/.gitlab-ci.yml/raw`, {
-          params: { ref },
-        }),
-      null
-    );
-  },
+
+
+
+
+
 
   getDeployKeys: async (projectId) =>
     safeRequest(() => api.get(`/projects/${projectId}/deploy_keys`), []),
