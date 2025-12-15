@@ -50,7 +50,7 @@ module.exports = async function checkSEC5(projectId, projectData, gitlab) {
   }
 
   return {
-    id: "CICD-SEC-5",
+    id: "SEC-CICD-5",
     name: "Недостаточный контроль доступа конвейера (PBAC)",
     results
   };
@@ -500,7 +500,7 @@ async function checkPipelineActivity(results, pipelines, projectId, gitlab) {
 //   }
 
 //   return {
-//     id: "CICD-SEC-5",
+//     id: "SEC-CICD-5",
 //     name: "Недостаточный контроль доступа конвейера (PBAC)",
 //     results
 //   };

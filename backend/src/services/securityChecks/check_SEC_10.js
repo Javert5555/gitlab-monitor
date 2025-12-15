@@ -10,7 +10,7 @@
 //   });
 
 //   return {
-//     id: "CICD-SEC-10",
+//     id: "SEC-CICD-10",
 //     name: "Недостаточное логирование и мониторинг",
 //     results
 //   };
@@ -36,7 +36,7 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
         severity: "low"
       });
       return {
-        id: "CICD-SEC-10",
+        id: "SEC-CICD-10",
         name: "Недостаточное логирование и видимость",
         results
       };
@@ -373,7 +373,7 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
   }
   
   return {
-    id: "CICD-SEC-10",
+    id: "SEC-CICD-10",
     name: "Недостаточное логирование и видимость",
     results
   };

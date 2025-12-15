@@ -31,7 +31,7 @@
 //   });
 
 //   return {
-//     id: "CICD-SEC-2",
+//     id: "SEC-CICD-2",
 //     name: "Неадекватное управление IAM",
 //     results
 //   };
@@ -229,7 +229,7 @@
 //     }
 
 //     return {
-//         id: "CICD-SEC-2",
+//         id: "SEC-CICD-2",
 //         name: "Неадекватное управление идентификацией и доступом",
 //         results
 //     };
@@ -429,7 +429,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
   }
   
   return {
-    id: "CICD-SEC-2",
+    id: "SEC-CICD-2",
     name: "Неадекватное управление идентификацией и доступом",
     results
   };

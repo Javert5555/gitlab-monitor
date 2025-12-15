@@ -11,7 +11,7 @@
         >
           <div class="check-header">
             <h3 class="check-name">{{ check.name }}</h3>
-            <span class="check-id">SEC{{ check.id }}</span>
+            <span class="check-id">{{ check.id }}</span>
           </div>
           
           <div v-if="!check.results || check.results.length === 0" class="no-results">
@@ -105,7 +105,8 @@ const formatDate = (dateString) => {
 
 const getStatusClass = (status) => {
   const statusMap = {
-    'FAIL': 'status-fail',
+    'DANGER': 'status-danger',
+    'FAIL': 'status-danger',
     'WARN': 'status-warn',
     'PASS': 'status-pass',
     'INFO': 'status-info'
@@ -255,7 +256,7 @@ const getStatusClass = (status) => {
   border-left: 4px solid #bdc3c7;
 }
 
-.check-result.status-fail {
+.check-result.status-danger {
   background: #ffeaea;
   border-left-color: #e74c3c;
 }
@@ -295,7 +296,7 @@ const getStatusClass = (status) => {
   text-transform: uppercase;
 }
 
-.status-fail .result-status {
+.status-danger .result-status {
   background: #e74c3c;
   color: white;
 }

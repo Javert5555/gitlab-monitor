@@ -19,7 +19,7 @@
 //   });
 
 //   return {
-//     id: "CICD-SEC-3",
+//     id: "SEC-CICD-3",
 //     name: "Злоупотребление цепочкой зависимостей",
 //     results
 //   };
@@ -204,11 +204,11 @@ module.exports = async function checkSEC3(projectId, project, gitlab) {
         
         results.push({
           item: "Сканирование зависимостей в CI/CD",
-          status: hasDependencyCheck ? "OK" : "WARN",
+          status: hasDependencyCheck ? "OK" : "DANGER",
           details: hasDependencyCheck
             ? "В CI/CD настроено сканирование зависимостей."
             : "В CI/CD не обнаружено сканирование зависимостей. Рекомендуется добавить этап security scanning.",
-          severity: "medium"
+          severity: "high"
         });
       } catch (error) {
         // Не удалось прочитать CI-конфиг
@@ -242,7 +242,7 @@ module.exports = async function checkSEC3(projectId, project, gitlab) {
     
     results.push({
       item: "Использование внутренних реестров",
-      status: hasInternalRegistry ? "OK" : "WARN",
+      status: hasInternalRegistry ? "OK" : "DANGER",
       details: hasInternalRegistry
         ? "Обнаружено использование внутреннего реестра пакетов, что снижает риск dependency confusion."
         : "Не обнаружено использование внутреннего реестра пакетов. Рекомендуется настроить proxy-реестр.",
@@ -272,7 +272,7 @@ module.exports = async function checkSEC3(projectId, project, gitlab) {
   }
   
   return {
-    id: "CICD-SEC-3",
+    id: "SEC-CICD-3",
     name: "Злоупотребление цепочкой зависимостей",
     results
   };

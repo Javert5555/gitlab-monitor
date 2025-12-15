@@ -12,7 +12,7 @@
 // //   });
 
 // //   return {
-// //     id: "CICD-SEC-7",
+// //     id: "SEC-CICD-7",
 // //     name: "Небезопасная конфигурация",
 // //     results
 // //   };
@@ -374,7 +374,7 @@
 //   }
   
 //   return {
-//     id: "CICD-SEC-7",
+//     id: "SEC-CICD-7",
 //     name: "Небезопасная конфигурация системы",
 //     results
 //   };
@@ -652,7 +652,7 @@ module.exports = async function checkSEC7(projectId, projectData, gitlab) {
   }
   
   return {
-    id: "CICD-SEC-7",
+    id: "SEC-CICD-7",
     name: "Небезопасная конфигурация системы",
     results
   };

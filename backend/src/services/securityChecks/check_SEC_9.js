@@ -10,7 +10,7 @@
 //   });
 
 //   return {
-//     id: "CICD-SEC-9",
+//     id: "SEC-CICD-9",
 //     name: "Некорректная валидация артефактов",
 //     results
 //   };
@@ -32,7 +32,7 @@
 //         severity: "low"
 //       });
 //       return {
-//         id: "CICD-SEC-9",
+//         id: "SEC-CICD-9",
 //         name: "Ненадлежащая проверка целостности артефактов",
 //         results
 //       };
@@ -365,7 +365,7 @@
 //   }
   
 //   return {
-//     id: "CICD-SEC-9",
+//     id: "SEC-CICD-9",
 //     name: "Ненадлежащая проверка целостности артефактов",
 //     results
 //   };
@@ -386,7 +386,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         severity: "low"
       });
       return {
-        id: "CICD-SEC-9",
+        id: "SEC-CICD-9",
         name: "Ненадлежащая проверка целостности артефактов",
         results
       };
@@ -714,7 +714,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
   }
   
   return {
-    id: "CICD-SEC-9",
+    id: "SEC-CICD-9",
     name: "Ненадлежащая проверка целостности артефактов",
     results
   };

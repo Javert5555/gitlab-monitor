@@ -15,7 +15,7 @@
 // //   });
 
 // //   return {
-// //     id: "CICD-SEC-6",
+// //     id: "SEC-CICD-6",
 // //     name: "Недостаточная гигиена секретов",
 // //     results
 // //   };
@@ -293,7 +293,7 @@
 //   }
   
 //   return {
-//     id: "CICD-SEC-6",
+//     id: "SEC-CICD-6",
 //     name: "Недостаточная гигиена секретов",
 //     results
 //   };
@@ -344,7 +344,7 @@ module.exports = async function checkSEC6(projectId, projectData, gitlab) {
   }
 
   return {
-    id: "CICD-SEC-6",
+    id: "SEC-CICD-6",
     name: "Недостаточная гигиена секретов",
     results
   };

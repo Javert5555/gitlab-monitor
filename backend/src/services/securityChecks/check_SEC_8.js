@@ -10,7 +10,7 @@
 // //   });
 
 // //   return {
-// //     id: "CICD-SEC-8",
+// //     id: "SEC-CICD-8",
 // //     name: "Неконтролируемое использование сторонних сервисов",
 // //     results
 // //   };
@@ -462,7 +462,7 @@
 //   }
   
 //   return {
-//     id: "CICD-SEC-8",
+//     id: "SEC-CICD-8",
 //     name: "Неконтролируемое использование сторонних сервисов",
 //     results
 //   };
@@ -853,7 +853,7 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
   }
   
   return {
-    id: "CICD-SEC-8",
+    id: "SEC-CICD-8",
     name: "Неконтролируемое использование сторонних сервисов",
     results
   };

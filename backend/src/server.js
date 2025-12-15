@@ -11,6 +11,13 @@ const app = express();
 
 app.use(cors());
 
+// GitLab может присылать JSON в формате, требующем необработанное тело (например, для подписи)
+app.use(express.json({
+    limit: '10mb',
+    verify: (req, res, buf) => { req.rawBody = buf; }
+}));
+//
+
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(helmet());
@@ -26,7 +33,7 @@ async function start() {
     console.log('Database connected');
     await syncModels(); // sync models (alter true in implementation)
     // Запуск сервера
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server listening on port ${PORT}`);
     });
 

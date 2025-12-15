@@ -37,7 +37,7 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
     
     if (!hasCiConfigs) {
       return {
-        id: "CICD-SEC-4",
+        id: "SEC-CICD-4",
         name: "Poisoned Pipeline Execution (PPE) / Выполнение «отравленного» pipeline",
         results
       };
@@ -75,7 +75,7 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
   }
 
   return {
-    id: "CICD-SEC-4",
+    id: "SEC-CICD-4",
     name: "Poisoned Pipeline Execution (PPE) / Выполнение «отравленного» pipeline",
     results
   };

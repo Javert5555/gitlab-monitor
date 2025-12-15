@@ -450,10 +450,10 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
     results.push(checkForcePushProtection(protectedBranches, branches));
 
     // 3. Проверка защиты основной ветки
-    results.push(checkMainBranchProtection(protectedBranches));
+    // results.push(checkMainBranchProtection(protectedBranches));
 
     // 4. Проверка production-веток без защиты
-    results.push(checkProdBranchesProtection(branches));
+    // results.push(checkProdBranchesProtection(branches));
 
     // 5. Проверка MR без ревью
     results.push(checkMRWithoutReview(mergeRequests));
@@ -472,7 +472,7 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
   }
 
   return {
-    id: "CICD-SEC-1",
+    id: "SEC-CICD-1",
     name: "Недостаточные механизмы управления потоком",
     results,
   };
@@ -903,7 +903,7 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
 //   });
 
 //   return {
-//     id: "CICD-SEC-1",
+//     id: "SEC-CICD-1",
 //     name: "Недостаточные механизмы управления потоком",
 //     results,
 //   };

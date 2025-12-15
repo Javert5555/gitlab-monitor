@@ -55,7 +55,7 @@
       <h2>OWASP Top 10 CI/CD Security Risks</h2>
       <div class="risks-list">
         <div v-for="risk in owaspRisks" :key="risk.id" class="risk-item">
-          <strong>CICD-SEC-{{ risk.id }}:</strong> {{ risk.description }}
+          <strong>SEC-CICD-{{ risk.id }}:</strong> {{ risk.description }}
         </div>
       </div>
     </div>
