@@ -401,7 +401,7 @@ function checkMRWithoutReview(mergeRequests) {
     details: noReview.length
       ? `${noReview.length} слияний выполнено без ревью`
       : "Все слияния проходят ревью.",
-    severity: noReview.length > 0 ? "medium" : "low"
+    severity: noReview.length > 0 ? "medium" : "info"
   };
 }
 

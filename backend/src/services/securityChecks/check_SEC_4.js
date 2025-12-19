@@ -254,9 +254,9 @@ function checkPublicPPE(results, projectDetails, gitlabCIRaw) {
   if (isPublicProject) {
     results.push({
       item: "[3PE] Публичный проект",
-      status: "WARN",
+      status: "DANGER",
       details: "Проект является публичным. Повышен риск Public PPE атак через fork и PR.",
-      severity: "high"
+      severity: "critical"
     });
     
     // Проверка настройки pipeline для PR
