@@ -37,6 +37,13 @@ async function start() {
       console.log(`Server listening on port ${PORT}`);
     });
 
+        // Проверка email конфигурации
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+        console.warn('⚠️ Email configuration missing. Email notifications will not work.');
+    } else {
+        console.log('📧 Email service configured');
+    }
+
     // Импорт и запуск планировщика (он сам запускает initial full sync + запустит cron)
     const scheduler = require('./config/cron');
     // scheduler.start(); // экспортируем объект CronJob с методом start
