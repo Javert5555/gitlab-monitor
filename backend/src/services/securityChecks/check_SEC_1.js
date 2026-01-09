@@ -391,6 +391,7 @@ function checkProdBranchesProtection(branches) {
  * Проверка MR без ревью
  */
 function checkMRWithoutReview(mergeRequests) {
+  // console.log(mergeRequests)
   const noReview = mergeRequests.filter(
     (mr) => mr.approvals_before_merge === 0
   );
@@ -402,6 +403,26 @@ function checkMRWithoutReview(mergeRequests) {
       ? `${noReview.length} слияний выполнено без ревью`
       : "Все слияния проходят ревью.",
     severity: noReview.length > 0 ? "medium" : "info"
+  };
+}
+
+/**
+ * Проверка MR без ревью
+ */
+function checkAutoMR(mergeRequests) {
+  // console.log(mergeRequests)
+  const autoMerges = mergeRequests.filter(
+    (mr) => mr.merge_when_pipeline_succeeds
+  );
+
+  return {
+    item: "Обнаружено злоупотребление правилом автослияния в CI",
+    status: autoMerges.length > 0 ? "WARN" : "OK",
+    details: autoMerges.length
+      // ? `${autoMerges.length} слияний выполнено без ревью`
+      ? `Правило merge_when_pipeline_succeeds, установленое в true, обнаружены в MR c id: ${autoMerges.map((mr) => String(mr.id)).join(', ')}`
+      : "Злоупотребление правилом автослияния в CI не обнаружены",
+    severity: autoMerges.length > 0 ? "medium" : "info"
   };
 }
 
@@ -456,9 +477,12 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
     // results.push(checkProdBranchesProtection(branches));
 
     // 5. Проверка MR без ревью
-    results.push(checkMRWithoutReview(mergeRequests));
+    // results.push(checkMRWithoutReview(mergeRequests));
 
-    // 6. Проверка пайплайнов без проверок
+    // 6. Проверка злоупотребления auto-MR
+    results.push(checkAutoMR(mergeRequests));
+
+    // 7. Проверка пайплайнов без проверок
     results.push(checkPipelinesWithoutChecks(pipelines));
 
   } catch (error) {

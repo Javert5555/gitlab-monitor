@@ -331,6 +331,16 @@ module.exports = {
       []
     ),
 
+  getJobDetails: async (projectId, jobId) =>
+      safeRequest(() => api.get(`/projects/${projectId}/jobs/${jobId}`)),
+
+  getJobArtifactFile: async (projectId, jobId, artifactPath = "gl-sast-report.json") =>
+      safeRequest(() =>
+          api.get(`/projects/${projectId}/jobs/${jobId}/artifacts/${artifactPath}`, {
+              responseType: "json",
+          })
+      ),
+
   // ========================================================================
   //                             JOB ARTEFACTS
   // ========================================================================

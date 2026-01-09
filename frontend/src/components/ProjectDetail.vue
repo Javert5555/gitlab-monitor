@@ -34,6 +34,7 @@
               </div>
               <div v-if="result.severity" class="result-severity">
                 Уровень угрозы: 
+                <!-- Статус угрозы: -->
                 <span :class="'severity-' + result.severity.toLowerCase()">
                   {{ result.severity }}
                 </span>
