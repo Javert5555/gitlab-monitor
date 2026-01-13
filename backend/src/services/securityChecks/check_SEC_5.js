@@ -109,53 +109,53 @@ function checkSharedRunnersSecurity(results, projectRunners, gitlabCIRaw) {
       });
     }
     
-    // Проверка 3: Использование shared runners для production
-    let sharedUsedForProd = false;
-    let prodStagesWithShared = [];
+    // // Проверка 3: Использование shared runners для production
+    // let sharedUsedForProd = false;
+    // let prodStagesWithShared = [];
     
-    if (gitlabCIRaw) {
-      const lines = gitlabCIRaw.split('\n');
-      const prodStageRegex = /stage:\s*(prod|production|deploy)/i;
+    // if (gitlabCIRaw) {
+    //   const lines = gitlabCIRaw.split('\n');
+    //   const prodStageRegex = /stage:\s*(prod|production|deploy)/i;
       
-      lines.forEach((line, index) => {
-        if (prodStageRegex.test(line)) {
-          // Ищем теги для этого stage
-          for (let i = Math.max(0, index - 5); i < Math.min(lines.length, index + 5); i++) {
-            if (lines[i].includes('tags:')) {
-              const tagsMatch = lines[i].match(/tags:\s*\[?(.*?)\]?/i);
-              if (tagsMatch) {
-                const tags = tagsMatch[1].split(',').map(t => t.trim());
-                const usesSharedRunner = tags.some(tag => 
-                  sharedRunners.some(r => r.tag_list && r.tag_list.includes(tag))
-                );
+    //   lines.forEach((line, index) => {
+    //     if (prodStageRegex.test(line)) {
+    //       // Ищем теги для этого stage
+    //       for (let i = Math.max(0, index - 5); i < Math.min(lines.length, index + 5); i++) {
+    //         if (lines[i].includes('tags:')) {
+    //           const tagsMatch = lines[i].match(/tags:\s*\[?(.*?)\]?/i);
+    //           if (tagsMatch) {
+    //             const tags = tagsMatch[1].split(',').map(t => t.trim());
+    //             const usesSharedRunner = tags.some(tag => 
+    //               sharedRunners.some(r => r.tag_list && r.tag_list.includes(tag))
+    //             );
                 
-                if (usesSharedRunner) {
-                  sharedUsedForProd = true;
-                  prodStagesWithShared.push(`Строка ${index + 1}: ${line.trim()}`);
-                  break;
-                }
-              }
-            }
-          }
-        }
-      });
-    }
+    //             if (usesSharedRunner) {
+    //               sharedUsedForProd = true;
+    //               prodStagesWithShared.push(`Строка ${index + 1}: ${line.trim()}`);
+    //               break;
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   });
+    // }
     
-    if (sharedUsedForProd) {
-      results.push({
-        item: "Shared runners для production stages",
-        status: "FAIL",
-        details: `Shared runners используются для production stages:\n${prodStagesWithShared.slice(0, 3).join('\n')}${prodStagesWithShared.length > 3 ? '\n...' : ''}`,
-        severity: "critical"
-      });
-    } else if (sharedRunners.length > 0) {
-      results.push({
-        item: "Shared runners",
-        status: "WARN",
-        details: `Используются ${sharedRunners.length} shared runners. Убедитесь, что они не имеют доступа к production секретам.`,
-        severity: "medium"
-      });
-    }
+    // if (sharedUsedForProd) {
+    //   results.push({
+    //     item: "Shared runners для production stages",
+    //     status: "FAIL",
+    //     details: `Shared runners используются для production stages:\n${prodStagesWithShared.slice(0, 3).join('\n')}${prodStagesWithShared.length > 3 ? '\n...' : ''}`,
+    //     severity: "critical"
+    //   });
+    // } else if (sharedRunners.length > 0) {
+    //   results.push({
+    //     item: "Shared runners",
+    //     status: "WARN",
+    //     details: `Используются ${sharedRunners.length} shared runners. Убедитесь, что они не имеют доступа к production секретам.`,
+    //     severity: "medium"
+    //   });
+    // }
   }
   
   // Общая статистика по раннерам
@@ -163,7 +163,7 @@ function checkSharedRunnersSecurity(results, projectRunners, gitlabCIRaw) {
     item: "Общая статистика раннеров",
     status: "INFO",
     details: `Всего раннеров: ${projectRunners.length} (shared: ${sharedRunners.length}, project-specific: ${projectSpecificRunners.length})`,
-    severity: "low"
+    severity: "info"
   });
 }
 

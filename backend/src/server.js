@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
@@ -11,12 +10,10 @@ const app = express();
 
 app.use(cors());
 
-// GitLab может присылать JSON в формате, требующем необработанное тело (например, для подписи)
 app.use(express.json({
     limit: '10mb',
     verify: (req, res, buf) => { req.rawBody = buf; }
 }));
-//
 
 app.use(express.json());
 app.use(morgan('dev'));
@@ -31,7 +28,7 @@ async function start() {
     // Установить соединение и синхронизировать модели
     await sequelize.authenticate();
     console.log('Database connected');
-    await syncModels(); // sync models (alter true in implementation)
+    await syncModels();
     // Запуск сервера
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server listening on port ${PORT}`);

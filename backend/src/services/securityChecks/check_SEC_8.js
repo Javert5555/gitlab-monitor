@@ -515,7 +515,7 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
       details: totalWebhooks > 0
         ? `Обнаружено webhooks: Чат (${webhookCategories.chat.length}), CI/CD (${webhookCategories.ciCd.length}), Мониторинг (${webhookCategories.monitoring.length}), Деплой (${webhookCategories.deployment.length}), Другие (${webhookCategories.other.length})`
         : "Внешние интеграции не обнаружены.",
-      severity: "low"
+      severity: "info"
     });
     
     // 2. Проверка безопасности webhooks
@@ -667,7 +667,7 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
           item: "Внешние сервисы в CI/CD конфигурации",
           status: "INFO",
           details: `Обнаружены ссылки на внешние сервисы:\n${categoryDetails}`,
-          severity: "low"
+          severity: "info"
         });
         
         // Проверка на небезопасное использование внешних сервисов
@@ -727,33 +727,33 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
           item: "Зависимости от внешних пакетов",
           status: "INFO",
           details: `Обнаружены файлы зависимостей: ${packageFiles.map(f => f.name).join(', ')}. Зависимости загружаются из внешних реестров.`,
-          severity: "low"
+          severity: "info"
         });
       }
     }
     
-    // 6. Проверка на использование CDN и внешних ресурсов
-    if (repoTree && repoTree.length > 0) {
-      const webFiles = repoTree.filter(file => 
-        file.name && (
-          file.name.endsWith('.html') || 
-          file.name.endsWith('.js') || 
-          file.name.endsWith('.css')
-        )
-      ).slice(0, 10);
+    // // 6. Проверка на использование CDN и внешних ресурсов
+    // if (repoTree && repoTree.length > 0) {
+    //   const webFiles = repoTree.filter(file => 
+    //     file.name && (
+    //       file.name.endsWith('.html') || 
+    //       file.name.endsWith('.js') || 
+    //       file.name.endsWith('.css')
+    //     )
+    //   ).slice(0, 10);
       
-      // Заметка: в текущей архитектуре мы не загружаем содержимое файлов
-      // Если нужно проверять содержимое, это нужно делать в scanService.js
+    //   // Заметка: в текущей архитектуре мы не загружаем содержимое файлов
+    //   // Если нужно проверять содержимое, это нужно делать в scanService.js
       
-      if (webFiles.length > 0) {
-        results.push({
-          item: "Веб-файлы с возможными внешними ресурсами",
-          status: "INFO",
-          details: `Обнаружены ${webFiles.length} веб-файлов. Рекомендуется проверить на использование внешних CDN.`,
-          severity: "low"
-        });
-      }
-    }
+    //   if (webFiles.length > 0) {
+    //     results.push({
+    //       item: "Веб-файлы с возможными внешними ресурсами",
+    //       status: "INFO",
+    //       details: `Обнаружены ${webFiles.length} веб-файлов. Рекомендуется проверить на использование внешних CDN.`,
+    //       severity: "low"
+    //     });
+    //   }
+    // }
     
     // 7. Проверка на использование SaaS решений
     const saasIndicators = [];

@@ -398,23 +398,23 @@ module.exports = async function checkSEC7(projectId, projectData, gitlab) {
     const runners = projectRunners;
     
     // Проверка: Shared runners
-    const sharedRunners = runners.filter(r => r.is_shared);
+    // const sharedRunners = runners.filter(r => r.is_shared);
     
-    if (sharedRunners.length > 0) {
-      results.push({
-        item: "Shared Runner'ы (может быть небезопасно)",
-        status: "WARN",
-        details: `Обнаружено ${sharedRunners.length} shared runners: ${sharedRunners.map(r => r.description || r.id).join(", ")}`,
-        severity: "medium"
-      });
-    } else {
-      results.push({
-        item: "Shared Runner'ы",
-        status: "OK",
-        details: "Все Runner'ы приватные",
-        severity: "low"
-      });
-    }
+    // if (sharedRunners.length > 0) {
+    //   results.push({
+    //     item: "Shared Runner'ы (может быть небезопасно)",
+    //     status: "WARN",
+    //     details: `Обнаружено ${sharedRunners.length} shared runners: ${sharedRunners.map(r => r.description || r.id).join(", ")}`,
+    //     severity: "medium"
+    //   });
+    // } else {
+    //   results.push({
+    //     item: "Shared Runner'ы",
+    //     status: "OK",
+    //     details: "Все Runner'ы приватные",
+    //     severity: "low"
+    //   });
+    // }
     
     // Проверка: Раннеры с устаревшей конфигурацией
     const outdatedRunners = runners.filter(r => {
@@ -448,14 +448,14 @@ module.exports = async function checkSEC7(projectId, projectData, gitlab) {
     const projectSettings = projectDetails;
     
     // Проверка: Настройки shared runners
-    if (projectSettings.shared_runners_enabled) {
-      results.push({
-        item: "Включены shared runners",
-        status: "INFO",
-        details: "В проекте включены shared runners. Убедитесь в их безопасности.",
-        severity: "low"
-      });
-    }
+    // if (projectSettings.shared_runners_enabled) {
+    //   results.push({
+    //     item: "Включены shared runners",
+    //     status: "INFO",
+    //     details: "В проекте включены shared runners. Убедитесь в их безопасности.",
+    //     severity: "low"
+    //   });
+    // }
     
     // 3. Анализ CI/CD конфигурации на небезопасные настройки
     if (gitlabCIRaw) {
@@ -598,6 +598,8 @@ module.exports = async function checkSEC7(projectId, projectData, gitlab) {
     
     // 4. Проверка настроек окружений
     const environments = projectEnvironments;
+
+    // console.log('environments', environments)
     
     // Проверка: Окружения с внешними URL
     const externalEnvironments = environments.filter(env => 
@@ -614,32 +616,39 @@ module.exports = async function checkSEC7(projectId, projectData, gitlab) {
         details: `Обнаружены окружения с публичными URL: ${externalEnvironments.slice(0, 3).map(e => `${e.name}`).join(', ')}${externalEnvironments.length > 3 ? '...' : ''}`,
         severity: "medium"
       });
+    } else {
+      results.push({
+        item: "Окружения с публичными URL",
+        status: "OK",
+        details: `В проекте не обнаружены окружения.`,
+        severity: "medium"
+      });
     }
     
     // 5. Проверка настроек webhooks
     const hooks = projectHooks;
     
     // Проверка: Webhooks без SSL verification
-    const insecureHooks = hooks.filter(hook => 
-      hook && !hook.enable_ssl_verification
-    );
+    // const insecureHooks = hooks.filter(hook => 
+    //   hook && !hook.enable_ssl_verification
+    // );
     
-    if (insecureHooks.length > 0) {
-      results.push({
-        item: "Webhooks без SSL verification",
-        status: "DANGER",
-        details: `Обнаружены webhooks без SSL verification: ${insecureHooks.length} шт.`,
-        severity: "high"
-      });
-    }
+    // if (insecureHooks.length > 0) {
+    //   results.push({
+    //     item: "Webhooks без SSL verification",
+    //     status: "DANGER",
+    //     details: `Обнаружены webhooks без SSL verification: ${insecureHooks.length} шт.`,
+    //     severity: "high"
+    //   });
+    // }
     
     // 6. Проверка настроек безопасности проекта
-    results.push({
-      item: "Настройки сканирования безопасности",
-      status: "INFO",
-      details: "Для полной проверки настроек безопасности рекомендуется проверить: Container Scanning, Secret Detection, SAST, DAST в настройках проекта.",
-      severity: "low"
-    });
+    // results.push({
+    //   item: "Настройки сканирования безопасности",
+    //   status: "INFO",
+    //   details: "Для полной проверки настроек безопасности рекомендуется проверить: Container Scanning, Secret Detection, SAST, DAST в настройках проекта.",
+    //   severity: "low"
+    // });
     
   } catch (error) {
     console.error(`Error in SEC-7 check for project ${projectId}:`, error);

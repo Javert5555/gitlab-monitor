@@ -433,6 +433,7 @@ async function sendEmail(options) {
  * @returns {Promise<boolean>}
  */
 async function sendFullScanNotification(projects, scanSummary) {
+    console.log(projects)
     const criticalProjects = projects.filter(p => 
         p.latestScanSummary?.critical > 0 || p.scans?.[0]?.summary?.critical > 0
     );
@@ -484,15 +485,16 @@ async function sendFullScanNotification(projects, scanSummary) {
  * @returns {Promise<boolean>}
  */
 async function sendSingleProjectNotification(project, scanResult) {
+    console.log(project)
     const critical = scanResult.summary?.critical || 0;
-    const projectName = project.name || `Проект ${project.gitLabProjectId}`;
+    const projectName = project.dataValues.name || `Проект ${project?.dataValues?.gitLabProjectId}`;
 
     const subject = `[Security Monitor] Сканирование проекта "${projectName}": ${critical} критических угроз`;
 
     let html = `
         <h2>Результаты сканирования проекта</h2>
         <p><strong>Проект:</strong> ${projectName}</p>
-        <p><strong>GitLab ID:</strong> ${project.gitLabProjectId}</p>
+        <p><strong>GitLab ID:</strong> ${project.dataValues.gitLabProjectId}</p>
         <p><strong>Критических угроз:</strong> ${critical}</p>
         <p><strong>Всего рисков:</strong> ${scanResult.summary?.totalRisks || 0}</p>
     `;

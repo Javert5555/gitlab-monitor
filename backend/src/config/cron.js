@@ -3,7 +3,8 @@ const CronJob = require('cron').CronJob;
 const projectCtrl = require('../controllers/project.controller');
 
 // Cron expression: every 30 minutes -> '0 */30 * * * *' (second, minute, hour...)
-const job = new CronJob('0 */30 * * * *', async () => {
+// const job = new CronJob('0 */30 * * * *', async () => {
+const job = new CronJob('0 */10 * * * *', async () => {
   console.log('Cron: starting scheduled full scan (every 30 minutes)');
   try {
     await projectCtrl.fullScan(); // fullScan вернёт объект, но тут без res

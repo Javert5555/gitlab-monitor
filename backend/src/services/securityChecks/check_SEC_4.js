@@ -28,11 +28,11 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
     
     results.push({
       item: "Наличие CI/CD конфигураций",
-      status: hasCiConfigs ? "OK" : "INFO",
+      status: "INFO",
       details: hasCiConfigs
         ? `Обнаружены файлы CI/CD: ${ciConfigs.map(f => f.name).join(', ')}`
         : "Файлы CI/CD не обнаружены. Проверка PPE не применима.",
-      severity: "low"
+      severity: "info"
     });
     
     if (!hasCiConfigs) {
@@ -102,7 +102,7 @@ function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoT
   if (unprotectedMainBranches.length > 0) {
     results.push({
       item: "[D-PPE] Защита основных веток с CI файлами",
-      status: "FAIL",
+      status: "DANGER",
       details: `Основные ветки не защищены от прямого изменения: ${unprotectedMainBranches.map(b => b.name).join(', ')}. Разработчики могут напрямую изменять CI конфигурации.`,
       severity: "critical"
     });
@@ -136,14 +136,14 @@ function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoT
   
   const hasCodeowners = codeownersFiles.length > 0;
   
-  if (!hasCodeowners) {
-    results.push({
-      item: "[D-PPE] CODEOWNERS для CI файлов",
-      status: "WARN",
-      details: "Не обнаружен файл CODEOWNERS. Рекомендуется назначить ответственных за CI файлы.",
-      severity: "medium"
-    });
-  }
+  // if (!hasCodeowners) {
+  //   results.push({
+  //     item: "[D-PPE] CODEOWNERS для CI файлов",
+  //     status: "WARN",
+  //     details: "Не обнаружен файл CODEOWNERS. Рекомендуется назначить ответственных за CI файлы.",
+  //     severity: "medium"
+  //   });
+  // }
 }
 
 /**
@@ -189,9 +189,16 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
   if (foundScripts.length > 0) {
     results.push({
       item: "[I-PPE] Исполняемые скрипты, на которые ссылается CI",
-      status: "WARN",
+      status: "DANGER",
       details: `CI ссылается на ${foundScripts.length} скриптов: ${foundScripts.slice(0, 5).join(', ')}${foundScripts.length > 5 ? '...' : ''}. Их изменение может привести к I-PPE.`,
-      severity: "high"
+      severity: "critical"
+    });
+  } else {
+    results.push({
+      item: "[I-PPE] Исполняемые скрипты, на которые ссылается CI",
+      status: "OK",
+      details: `CI конфигурация не ссылается на сторонние скрипты.`,
+      severity: "critical"
     });
   }
 
@@ -293,24 +300,24 @@ function checkProtectionMeasures(results, data) {
   } = data;
   
   // 1. Сегментированная инфраструктура dev/prod
-  const sharedRunners = projectRunners.filter(r => r.is_shared);
-  const projectSpecificRunners = projectRunners.filter(r => !r.is_shared);
+  // const sharedRunners = projectRunners.filter(r => r.is_shared);
+  // const projectSpecificRunners = projectRunners.filter(r => !r.is_shared);
   
-  if (sharedRunners.length > 0 && projectSpecificRunners.length === 0) {
-    results.push({
-      item: "Защита: Сегментация runners",
-      status: "WARN",
-      details: `Используются только shared runners (${sharedRunners.length} шт.). Нет сегментации между окружениями.`,
-      severity: "high"
-    });
-  } else if (projectSpecificRunners.length > 0) {
-    results.push({
-      item: "Защита: Сегментация runners",
-      status: "OK",
-      details: `Используются project-specific runners (${projectSpecificRunners.length} шт.). Возможна сегментация окружений.`,
-      severity: "low"
-    });
-  }
+  // if (sharedRunners.length > 0 && projectSpecificRunners.length === 0) {
+  //   results.push({
+  //     item: "Защита: Сегментация runners",
+  //     status: "WARN",
+  //     details: `Используются только shared runners (${sharedRunners.length} шт.). Нет сегментации между окружениями.`,
+  //     severity: "high"
+  //   });
+  // } else if (projectSpecificRunners.length > 0) {
+  //   results.push({
+  //     item: "Защита: Сегментация runners",
+  //     status: "OK",
+  //     details: `Используются project-specific runners (${projectSpecificRunners.length} шт.). Возможна сегментация окружений.`,
+  //     severity: "low"
+  //   });
+  // }
   
   // 2. Разделение секретов по окружениям
   const secretVariables = projectVariables.filter(v =>
@@ -375,21 +382,21 @@ function checkProtectionMeasures(results, data) {
   }
   
   // 5. Проверка вебхуков на безопасность
-  const insecureHooks = projectHooks.filter(hook => 
-    hook && (
-      !hook.enable_ssl_verification || 
-      (hook.url && hook.url.startsWith('http://'))
-    )
-  );
+  // const insecureHooks = projectHooks.filter(hook => 
+  //   hook && (
+  //     !hook.enable_ssl_verification || 
+  //     (hook.url && hook.url.startsWith('http://'))
+  //   )
+  // );
   
-  if (insecureHooks.length > 0) {
-    results.push({
-      item: "Защита: Безопасность вебхуков",
-      status: "FAIL",
-      details: `Обнаружены небезопасные вебхуки: ${insecureHooks.length} шт. без SSL или использующие HTTP.`,
-      severity: "high"
-    });
-  }
+  // if (insecureHooks.length > 0) {
+  //   results.push({
+  //     item: "Защита: Безопасность вебхуков",
+  //     status: "FAIL",
+  //     details: `Обнаружены небезопасные вебхуки: ${insecureHooks.length} шт. без SSL или использующие HTTP.`,
+  //     severity: "high"
+  //   });
+  // }
   
   // 6. Проверка на стабильность сборок
   if (pipelines && pipelines.length > 0) {

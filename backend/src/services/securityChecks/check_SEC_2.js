@@ -2,8 +2,6 @@ const axios = require('axios');
 
 module.exports = async function checkSEC2(projectId, projectData, gitlab) {
 
-  // console.log('projectData', projectData)
-
     const {
       projectMembers = [],
       projectDetails = {},
@@ -11,13 +9,6 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       deployKeys
     } = projectData;
 
-//     const {
-//         projectMembers = [],
-//         projectDetails = {},
-//         projectVariables = [],
-//         deployKeys = [],
-//         allUsers = []
-//     } = projectData;
 
   const results = [];
   
@@ -45,7 +36,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
     // 3. Проверка неактивных учётных записей (более 90 дней)
     const now = new Date();
     const inactiveThreshold = 90 * 24 * 60 * 60 * 1000; // 90 дней в миллисекундах
-    console.log(projectMembers)
+    // console.log(projectMembers)
     const inactiveUsers = projectMembers.filter(m => m.state !== 'active');
     
     results.push({
@@ -57,69 +48,23 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       severity: "medium"
     });
     
-    // 4. Проверка сервисных/общих аккаунтов
-    const serviceAccounts = projectMembers.filter(m => 
-      m.username.includes('service') || 
-      m.username.includes('bot') ||
-      m.username.includes('robot') ||
-      m.username.includes('ci-') ||
-      /^[a-z]+-[a-z]+-bot$/i.test(m.username)
-    );
+    // -. Проверка даты истечения
+    const notExpiresMembers = projectMembers.filter(m => !m.expires_at);
     
-    results.push({
-      item: "Сервисные/технические аккаунты",
-      status: serviceAccounts.length > 0 ? "WARN" : "INFO",
-      details: serviceAccounts.length > 0
-        ? `Обнаружено ${serviceAccounts.length} сервисных аккаунтов: ${serviceAccounts.map(s => s.username).join(', ')}. Убедитесь, что у них минимальные необходимые привилегии.`
-        : "Сервисные аккаунты не обнаружены.",
-      severity: "medium"
-    });
-    
-    // 5. Проверка MFA (если доступен через API)
-    try {
-      // Для GitLab.com можно использовать другой endpoint
-      const usersWithoutMFA = [];
-      for (const member of projectMembers) {
-        if (member.access_level >= 30) { // Developer и выше
-          // В реальном сценарии нужен доступ к admin API для проверки MFA
-          // Это заглушка для демонстрации логики
-          usersWithoutMFA.push(member.username);
-        }
-      }
-      
-      if (usersWithoutMFA.length > 0) {
-        results.push({
-          item: "Пользователи без MFA",
-          status: "WARN",
-          details: `Обнаружены пользователи с привилегиями без MFA: ${usersWithoutMFA.join(', ')}. Рекомендуется включить двухфакторную аутентификацию.`,
-          severity: "high"
-        });
-      }
-    } catch (error) {
-      // Пропускаем если нет доступа к проверке MFA
-    }
-    
-    // 6. Проверка внешних участников (не из домена компании)
-    const externalUsers = projectMembers.filter(m => {
-      const email = m.email || '';
-      return email.includes('gmail.com') || 
-             email.includes('yahoo.com') || 
-             email.includes('outlook.com') ||
-             email.includes('hotmail.com');
-    });
-    
+    // console.log(notExpiresMembers)
     results.push({
       item: "Внешние участники (личные email)",
-      status: externalUsers.length > 0 ? "HIGH" : "OK",
-      details: externalUsers.length > 0
-        ? `Обнаружено ${externalUsers.length} участников с личными email-адресами: ${externalUsers.map(u => `${u.username} (${u.email})`).join(', ')}. Это может быть угрозой безопасности.`
-        : "Все участники используют корпоративные email-адреса.",
-      severity: "high"
+      status: "INFO",
+      details: notExpiresMembers.length > 0
+        ? `Рекомендовано установить срок действия для учетных записей, связанных с данным проектом: ${notExpiresMembers.map(u => `${u.username}`).join(', ')}.`
+        : "Срок действия для всех учетных записей, связанных с данным проектом, установлен.",
+      severity: "info"
     });
     
     // 7. Проверка deploy keys без ограничений
     if (deployKeys && deployKeys.length > 0) {
       const unrestrictedKeys = deployKeys.filter(key => !key.can_push);
+      // console.log(deployKeys)
       
       results.push({
         item: "Deploy Keys с правами записи",
@@ -168,11 +113,11 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
     
     results.push({
       item: "Токены доступа в переменных",
-      status: accessTokens.length > 0 ? "WARN" : "INFO",
+      status: accessTokens.length > 0 ? "DANGER" : "OK",
       details: accessTokens.length > 0
         ? `Обнаружено ${accessTokens.length} токенов доступа в переменных. Убедитесь, что токены имеют ограниченный срок действия и минимальные необходимые права.`
         : "Токены доступа не обнаружены в переменных проекта.",
-      severity: "medium"
+      severity: "high"
     });
     
   } catch (error) {

@@ -16,7 +16,8 @@
           </p>
           <div class="project-meta">
             <span class="meta-item">
-              GitLab ID: {{ store.currentProject.project.gitlabProjectId }}
+              <!-- GitLab ID: {{ projectId }} -->
+              ID: {{ projectId }}
             </span>
             <span class="meta-item">
               Сканирований: {{ store.currentProject.scans?.length || 0 }}
@@ -81,6 +82,7 @@ const fetchProjectDetails = () => {
 
 const scanProject = async () => {
   try {
+    console.log(projectId)
     await store.scanSingleProject(projectId)
   } catch (error) {
     // Ошибка уже обработана в store

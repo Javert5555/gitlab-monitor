@@ -81,7 +81,7 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       status: hasErrorLogging ? "OK" : "WARN",
       details: hasErrorLogging
         ? "Обнаружена обработка ошибок в конфигурации."
-        : "Не обнаружена явная обработка ошибок. Рекомендуется добавить trap или обработчики ошибок.",
+        : "Не обнаружена явная обработка ошибок. Рекомендуется добавить обработчики ошибок (catch).",
       severity: "medium"
     });
     
@@ -199,9 +199,9 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       if (oldPipelines.length > 0) {
         results.push({
           item: "Доступность истории пайплайнов",
-          status: "OK",
+          status: "INFO",
           details: `Доступны логи пайплайнов старше 30 дней (${oldPipelines.length} шт.).`,
-          severity: "low"
+          severity: "info"
         });
       }
     }
