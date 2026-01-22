@@ -10,22 +10,22 @@ export const useProjectStore = defineStore('project', () => {
   const error = ref(null)
   const toast = useAppToast()
 
-  // Геттер для проектов с сортировкой по количеству рисков
+  // геттер для проектов с сортировкой по количеству рисков
   const sortedProjects = computed(() => {
     return [...projects.value].sort((a, b) => b.latestRiskCount - a.latestRiskCount)
   })
 
-  // Геттер для общего количества рисков
+  // геттер для общего количества рисков
   const totalRisks = computed(() => {
     return projects.value.reduce((sum, project) => sum + project.latestRiskCount, 0)
   })
 
-  // Геттер для проектов с высоким риском
+  // геттер для проектов с высоким риском
   const highRiskProjects = computed(() => {
     return projects.value.filter(project => project.latestRiskCount > 0)
   })
 
-  // Действия
+  // действия
   const fetchProjects = async () => {
     loading.value = true
     error.value = null
@@ -65,10 +65,10 @@ export const useProjectStore = defineStore('project', () => {
       toast.scanStarted()
       const response = await projectAPI.triggerFullScan()
       
-      // После сканирования обновляем список проектов
+      // после сканирования обновляем список проектов
       await fetchProjects()
       
-      // Показываем успешное уведомление
+      // показываем успешное уведомление
       toast.scanSuccess(null, totalRisks.value)
       
       return response.data
@@ -94,15 +94,15 @@ export const useProjectStore = defineStore('project', () => {
       
       const response = await projectAPI.scanProject(projectId)
       
-      // Обновляем данные проекта после сканирования
+      // обновляем данные проекта после сканирования
       await fetchProjectDetails(projectId)
       await fetchProjects()
       
-      // Получаем актуальное количество рисков
+      // получаем актуальное количество рисков
       const updatedProject = projects.value.find(p => p.id == projectId)
       const riskCount = updatedProject?.latestRiskCount || 0
       
-      // Показываем успешное уведомление
+      // показываем успешное уведомление
       toast.scanSuccess(projectName, riskCount)
       
       return response.data
@@ -120,13 +120,13 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  // Новый метод для быстрого обновления с уведомлением
+  // новый метод для быстрого обновления с уведомлением
   const refreshProjectsWithToast = async () => {
     try {
       await fetchProjects()
       toast.success('Список проектов обновлен')
     } catch (err) {
-      // Ошибка уже обработана в fetchProjects
+      // ошибка уже обработана в fetchProjects
     }
   }
 

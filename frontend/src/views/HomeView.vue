@@ -47,6 +47,63 @@
       </button>
     </div>
 
+    <div class="scheduling-section">
+        <h2>Планирование сканирования</h2>
+        
+        <div v-if="scheduleStore.loading && !scheduleStore.currentSchedule" class="loading">
+            Загрузка расписания...
+        </div>
+        
+        <div v-else class="schedule-content">
+            <div class="current-schedule">
+                <p><strong>Текущее расписание полного сканирования:</strong> {{ scheduleStore.scheduleFormatted }}</p>
+                <!-- <p><strong>Следующий запуск:</strong> {{ scheduleStore.nextRunFormatted }}</p> -->
+            </div>
+            
+            <div class="schedule-controls">
+                <div class="schedule-select">
+                    <label for="schedule-select">Изменить расписание:</label>
+                    <select 
+                        id="schedule-select"
+                        v-model="selectedSchedule"
+                        @change="updateSchedule"
+                        :disabled="scheduleStore.loading"
+                        class="schedule-dropdown"
+                    >
+                        <option value="" disabled>Выберите расписание...</option>
+                        <option value="disabled">Отключить</option>
+                        <option value="every-10-minutes">Каждые 10 минут</option>
+                        <optgroup label="По часам">
+                            <option value="hourly">Каждый час</option>
+                            <option value="every-2-hours">Каждые 2 часа</option>
+                            <option value="every-3-hours">Каждые 3 часа</option>
+                            <option value="every-4-hours">Каждые 4 часа</option>
+                            <option value="every-6-hours">Каждые 6 часов</option>
+                            <option value="every-8-hours">Каждые 8 часов</option>
+                            <option value="every-12-hours">Каждые 12 часов</option>
+                        </optgroup>
+                        <optgroup label="По дням">
+                            <option value="daily">Ежедневно</option>
+                            <option value="every-2-days">Каждые 2 дня</option>
+                            <option value="every-3-days">Каждые 3 дня</option>
+                            <option value="every-4-days">Каждые 4 дня</option>
+                            <option value="weekly">Еженедельно</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div v-if="scheduleStore.loading" class="schedule-loading">
+                    <span class="spinner-small"></span>
+                    Обновление...
+                </div>
+                
+                <div v-if="scheduleStore.error" class="schedule-error">
+                    {{ scheduleStore.error }}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div v-if="store.error" class="error-message">
       {{ store.error }}
     </div>
@@ -63,10 +120,26 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useProjectStore } from '../stores/project'
+import { useScheduleStore } from '../stores/schedule'
 
 const store = useProjectStore()
+const scheduleStore = useScheduleStore()
+
+const selectedSchedule = ref('')
+
+// Обработка изменения расписания
+const updateSchedule = async () => {
+    if (!selectedSchedule.value) return
+    
+    try {
+        await scheduleStore.updateSchedule(selectedSchedule.value)
+        selectedSchedule.value = '' // Сбрасываем выбор
+    } catch (error) {
+        // Ошибка уже обработана в store
+    }
+}
 
 const owaspRisks = [
   { id: 1, description: 'Insufficient Flow Control Mechanisms / Недостаточные механизмы управления потоком' },
@@ -94,7 +167,8 @@ const refreshProjects = async () => {
 }
 
 onMounted(() => {
-  store.fetchProjects()
+    store.fetchProjects()
+    scheduleStore.initialize()
 })
 </script>
 
@@ -252,5 +326,107 @@ onMounted(() => {
   background: #f8f9fa;
   border-radius: 5px;
   border-left: 3px solid #3498db;
+}
+
+/* В HomeView.vue стили */
+.scheduling-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 3rem;
+}
+
+.scheduling-section h2 {
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 0.5rem;
+}
+
+.current-schedule {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.current-schedule p {
+    margin: 0.5rem 0;
+}
+
+.schedule-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.schedule-select {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.schedule-select label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.schedule-dropdown {
+    padding: 0.75rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.schedule-dropdown:hover {
+    border-color: #3498db;
+}
+
+.schedule-dropdown:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.schedule-dropdown:disabled {
+    background: #f8f9fa;
+    cursor: not-allowed;
+}
+
+.schedule-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.schedule-error {
+    color: #e74c3c;
+    background: #ffeaea;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 4px solid #e74c3c;
+    font-size: 0.9rem;
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
 }
 </style>

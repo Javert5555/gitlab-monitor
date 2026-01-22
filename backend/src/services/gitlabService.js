@@ -1,4 +1,3 @@
-// src/services/gitlabService.js
 const axios = require("axios");
 require("dotenv").config();
 
@@ -14,7 +13,7 @@ const api = axios.create({
 });
 
 // ============================================================================
-//  ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ
+//                         ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ
 // ============================================================================
 
 async function safeRequest(fn, defaultValue = null) {
@@ -65,7 +64,7 @@ module.exports = {
     ),
 
   // ========================================================================
-  //                          УЧАСТНИКИ ПРОЕКТА
+  //                  УЧАСТНИКИ ПРОЕКТА
   // ========================================================================
 
   getProjectMembers: async (projectId) =>
@@ -174,14 +173,14 @@ module.exports = {
     ),
 
   // ========================================================================
-  //                        WEBHOOKS (3rd party services)
+  //                        WEBHOOKS
   // ========================================================================
 
   getProjectHooks: async (projectId) =>
     safeRequest(() => api.get(`/projects/${projectId}/hooks`), []),
 
   // ========================================================================
-  //                      USERS (для IAM проверок)
+  //                      USERS
   // ========================================================================
 
   getAllUsers: async (options = {}) => {
@@ -191,11 +190,6 @@ module.exports = {
   },
 
   getUser: async (userId) => safeRequest(() => api.get(`/users/${userId}`)),
-
-
-
-
-
 
 
   getDeployKeys: async (projectId) =>

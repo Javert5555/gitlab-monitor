@@ -1,6 +1,5 @@
 <template>
   <div class="project-detail">
-    <!-- Детали последнего сканирования -->
     <div v-if="latestScan" class="section">
       <h2>Результаты последнего сканирования</h2>
       <div class="security-checks">
@@ -34,7 +33,6 @@
               </div>
               <div v-if="result.severity" class="result-severity">
                 Уровень угрозы: 
-                <!-- Статус угрозы: -->
                 <span :class="'severity-' + result.severity.toLowerCase()">
                   {{ result.severity }}
                 </span>
@@ -45,7 +43,16 @@
       </div>
     </div>
 
-    <!-- Последние сканирования -->
+    <div v-if="hasScanHistory" class="section">
+      <h2>Тенденции изменения угроз</h2>
+      <TrendChart 
+          :scans="project.scans" 
+          :height="300"
+          :show-legend="true"
+          :title="'Динамика угроз в проекте ' + projectName"
+      />
+    </div>
+
     <div class="section">
       <h2>История сканирований</h2>
       <div v-if="!project.scans || project.scans.length === 0" class="empty-state">
@@ -87,6 +94,7 @@
 <script setup>
 import { computed } from 'vue'
 import RiskBadge from './RiskBadge.vue'
+import TrendChart from './TrendChart.vue'
 
 const props = defineProps({
   project: {
@@ -114,6 +122,16 @@ const getStatusClass = (status) => {
   }
   return statusMap[status] || 'status-unknown'
 }
+
+const hasScanHistory = computed(() => {
+    return props.project.scans && props.project.scans.length > 1
+})
+
+const projectName = computed(() => {
+    return props.project.project?.name || `Проект ${props.project.project?.gitLabProjectId}`
+})
+
+
 </script>
 
 <style scoped>

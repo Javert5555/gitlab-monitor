@@ -8,17 +8,23 @@ const api = axios.create({
 })
 
 export const projectAPI = {
-  // Получить список всех проектов
+  // получить список всех проектов
   getProjects: () => api.get('/projects'),
   
-  // Получить детальную информацию о проекте
+  // получить детальную информацию о проекте
   getProjectDetails: (projectId) => api.get(`/projects/${projectId}`),
   
-  // Запустить полное сканирование
+  // запустить полное сканирование
   triggerFullScan: () => api.post('/scan/full'),
   
-  // Запустить сканирование конкретного проекта
+  // запустить сканирование конкретного проекта
   scanProject: (projectId) => api.post(`/scan/${projectId}`)
+}
+
+export const scheduleAPI = {
+    getSchedule: () => api.get('/schedule'),
+    updateSchedule: (schedule) => api.post('/schedule', { schedule }),
+    getAvailableSchedules: () => api.get('/schedule/available')
 }
 
 export default api

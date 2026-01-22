@@ -1,4 +1,3 @@
-// src/services/securityChecks/check_SEC_4.js
 module.exports = async function checkSEC4(projectId, project, gitlab) {
   const {
     repoTree = [],
@@ -17,7 +16,7 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
   const results = [];
 
   try {
-    // 1. Проверка наличия CI/CD конфигурационных файлов
+    // Проверка наличия CI/CD конфигурационных файлов
     const ciConfigs = repoTree.filter(file => 
       file.name === '.gitlab-ci.yml' ||
       file.name === 'Jenkinsfile' ||
@@ -81,13 +80,13 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
   };
 };
 
-// ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ============
+// ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ============ \
 
 /**
- * Проверка Direct PPE - защита от изменения файлов конфигурации
+ * проверка Direct PPE - защита от изменения файлов конфигурации
  */
 function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoTree, ciConfigs) {
-  // 1. Защита веток с CI файлами
+  // защита веток с CI файлами
   const mainBranches = branches.filter(b => 
     b.name === 'main' || b.name === 'master' || b.name === 'develop'
   );
@@ -108,7 +107,7 @@ function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoT
     });
   }
 
-  // 2. Раздельные репозитории / submodules / includes
+  // Раздельные репозитории / submodules / includes
   if (gitlabCIRaw) {
     const lines = gitlabCIRaw.split('\n');
     
@@ -128,7 +127,7 @@ function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoT
     }
   }
 
-  // 3. Наличие CODEOWNERS для CI файлов
+  // Наличие CODEOWNERS для CI файлов
   const codeownersFiles = repoTree.filter(file => 
     file.name === 'CODEOWNERS' || 
     file.name === '.github/CODEOWNERS'
@@ -136,16 +135,7 @@ function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoT
   
   const hasCodeowners = codeownersFiles.length > 0;
   
-  // if (!hasCodeowners) {
-  //   results.push({
-  //     item: "[D-PPE] CODEOWNERS для CI файлов",
-  //     status: "WARN",
-  //     details: "Не обнаружен файл CODEOWNERS. Рекомендуется назначить ответственных за CI файлы.",
-  //     severity: "medium"
-  //   });
-  // }
 }
-
 /**
  * Проверка Indirect PPE - защита от изменения зависимых файлов
  */
@@ -154,7 +144,7 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
   
   const lines = gitlabCIRaw.split('\n');
   
-  // 1. Поиск исполняемых скриптов, на которые ссылается CI
+  // Поиск исполняемых скриптов, на которые ссылается CI
   const scriptPatterns = [
     /\.sh$/i,
     /\.bash$/i,
@@ -177,7 +167,7 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
     });
   });
   
-  // 2. Проверка защиты этих скриптов (поиск в репозитории)
+  // Проверка защиты этих скриптов (поиск в репозитории)
   const foundScripts = [];
   for (const script of referencedScripts.slice(0, 10)) {
     const scriptFile = repoTree.find(file => file.path && file.path.includes(script));
@@ -202,7 +192,7 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
     });
   }
 
-  // 3. Проверка на динамическое исполнение кода
+  // Проверка на динамическое исполнение кода
   const dangerousPatterns = [
     { pattern: /curl.*\|.*(bash|sh)/i, description: "Загрузка и исполнение скриптов из интернета" },
     { pattern: /wget.*-O.*\|.*(bash|sh)/i, description: "Скачивание и исполнение файлов" },
@@ -233,7 +223,7 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
     });
   }
 
-  // 4. Проверка на использование небезопасных команд
+  // Проверка на использование небезопасных команд
   const unsafeCommands = lines.filter(line => 
     (line.includes('curl') || line.includes('wget')) &&
     (line.includes('|') || line.includes('>') || line.includes('<')) &&
@@ -286,9 +276,8 @@ function checkPublicPPE(results, projectDetails, gitlabCIRaw) {
   }
 }
 
-/**
- * Проверка способов защиты от PPE
- */
+// проверка способов защиты от PPE
+
 function checkProtectionMeasures(results, data) {
   const { 
     projectRunners = [], 
@@ -299,27 +288,8 @@ function checkProtectionMeasures(results, data) {
     gitlabCIRaw 
   } = data;
   
-  // 1. Сегментированная инфраструктура dev/prod
-  // const sharedRunners = projectRunners.filter(r => r.is_shared);
-  // const projectSpecificRunners = projectRunners.filter(r => !r.is_shared);
   
-  // if (sharedRunners.length > 0 && projectSpecificRunners.length === 0) {
-  //   results.push({
-  //     item: "Защита: Сегментация runners",
-  //     status: "WARN",
-  //     details: `Используются только shared runners (${sharedRunners.length} шт.). Нет сегментации между окружениями.`,
-  //     severity: "high"
-  //   });
-  // } else if (projectSpecificRunners.length > 0) {
-  //   results.push({
-  //     item: "Защита: Сегментация runners",
-  //     status: "OK",
-  //     details: `Используются project-specific runners (${projectSpecificRunners.length} шт.). Возможна сегментация окружений.`,
-  //     severity: "low"
-  //   });
-  // }
-  
-  // 2. Разделение секретов по окружениям
+  // разделение секретов по окружениям
   const secretVariables = projectVariables.filter(v =>
     v.key && (
       v.key.toLowerCase().includes('token') ||
@@ -342,7 +312,7 @@ function checkProtectionMeasures(results, data) {
     });
   }
   
-  // 3. Проверка на наличие dev/prod окружений
+  // Проверка на наличие dev/prod окружений
   const prodEnvironments = projectEnvironments.filter(env =>
     env.name && (
       env.name.toLowerCase().includes('prod') ||
@@ -361,13 +331,13 @@ function checkProtectionMeasures(results, data) {
   if (prodEnvironments.length > 0 && devEnvironments.length > 0) {
     results.push({
       item: "Защита: Разделение окружений",
-      status: "OK",
+      status: "INFO",
       details: `Обнаружены отдельные окружения: prod (${prodEnvironments.length}), dev (${devEnvironments.length}).`,
-      severity: "low"
+      severity: "info"
     });
   }
   
-  // 4. Проверка на привилегированные раннеры
+  // Проверка на привилегированные раннеры
   const privilegedRunners = projectRunners.filter(r => 
     r.tag_list && r.tag_list.includes('privileged')
   );
@@ -381,24 +351,7 @@ function checkProtectionMeasures(results, data) {
     });
   }
   
-  // 5. Проверка вебхуков на безопасность
-  // const insecureHooks = projectHooks.filter(hook => 
-  //   hook && (
-  //     !hook.enable_ssl_verification || 
-  //     (hook.url && hook.url.startsWith('http://'))
-  //   )
-  // );
-  
-  // if (insecureHooks.length > 0) {
-  //   results.push({
-  //     item: "Защита: Безопасность вебхуков",
-  //     status: "FAIL",
-  //     details: `Обнаружены небезопасные вебхуки: ${insecureHooks.length} шт. без SSL или использующие HTTP.`,
-  //     severity: "high"
-  //   });
-  // }
-  
-  // 6. Проверка на стабильность сборок
+  // Проверка на стабильность сборок
   if (pipelines && pipelines.length > 0) {
     const recentPipelines = pipelines.slice(0, 10);
     const failedPipelines = recentPipelines.filter(p => p.status === 'failed');
@@ -415,7 +368,7 @@ function checkProtectionMeasures(results, data) {
     }
   }
   
-  // 7. Проверка на использование Docker образов с фиксированными версиями
+  // Проверка на использование Docker образов с фиксированными версиями
   if (gitlabCIRaw) {
     const lines = gitlabCIRaw.split('\n');
     const imageLines = lines.filter(line => line.includes('image:'));

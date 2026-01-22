@@ -13,14 +13,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
   const results = [];
   
   try {
-    // 1. Получаем всех участников проекта с расширенными данными
-    // const members = await gitlab.getProjectMembers(projectId);
-    // const projectDetails = await gitlab.getProjectDetails(projectId);
-    // const projectVariables = await gitlab.getProjectVariables(projectId);
-    // const deployKeys = await gitlab.getDeployKeys(projectId);
-
-
-    // 2. Проверка избыточных прав
+    //  Проверка избыточных прав
     const owners = projectMembers.filter(m => m.access_level === 50); // Owner
     const maintainers = projectMembers.filter(m => m.access_level === 40); // Maintainer
     
@@ -33,7 +26,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       severity: "high"
     });
     
-    // 3. Проверка неактивных учётных записей (более 90 дней)
+    // Проверка неактивных учётных записей (более 90 дней)
     const now = new Date();
     const inactiveThreshold = 90 * 24 * 60 * 60 * 1000; // 90 дней в миллисекундах
     // console.log(projectMembers)
@@ -48,7 +41,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       severity: "medium"
     });
     
-    // -. Проверка даты истечения
+    // Проверка даты истечения
     const notExpiresMembers = projectMembers.filter(m => !m.expires_at);
     
     // console.log(notExpiresMembers)
@@ -61,7 +54,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       severity: "info"
     });
     
-    // 7. Проверка deploy keys без ограничений
+    // проверка deploy keys без ограничений
     if (deployKeys && deployKeys.length > 0) {
       const unrestrictedKeys = deployKeys.filter(key => !key.can_push);
       // console.log(deployKeys)
@@ -76,7 +69,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       });
     }
     
-    // 8. Проверка переменных окружения с секретами
+    // проверка переменных окружения с секретами
     const secretVariables = projectVariables.filter(v => 
       v.key.toLowerCase().includes('token') ||
       v.key.toLowerCase().includes('secret') ||
@@ -94,7 +87,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       severity: "high"
     });
     
-    // 9. Проверка protected переменных
+    // проверка protected переменных
     const unprotectedSecretVars = secretVariables.filter(v => !v.protected);
     
     if (unprotectedSecretVars.length > 0) {
@@ -106,7 +99,7 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
       });
     }
     
-    // 10. Проверка экспирации токенов
+    // проверка экспирации токенов
     const accessTokens = projectVariables.filter(v => 
       v.key.includes('_TOKEN') || v.key.includes('_ACCESS_KEY')
     );
@@ -136,11 +129,3 @@ module.exports = async function checkSEC2(projectId, projectData, gitlab) {
     results
   };
 };
-
-// Добавляем метод в gitlabService.js для получения deploy keys
-/*
-  В gitlabService.js добавить:
-  
-  getDeployKeys: async (projectId) =>
-    safeRequest(() => api.get(`/projects/${projectId}/deploy_keys`), []),
-*/

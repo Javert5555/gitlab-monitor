@@ -1,21 +1,3 @@
-// module.exports = async function checkSEC10(projectId, gitlab) {
-//   const pipelines = await gitlab.getProjectPipelines(projectId);
-
-//   const results = [];
-
-//   results.push({
-//     item: "Логирование критичных событий",
-//     status: pipelines.length ? "WARN" : "OK",
-//     details: "Проверка логирования на продакшн пайплайнах вручную"
-//   });
-
-//   return {
-//     id: "SEC-CICD-10",
-//     name: "Недостаточное логирование и мониторинг",
-//     results
-//   };
-// };
-
 module.exports = async function checkSEC10(projectId, projectData, gitlab) {
   const {
     gitlabCIRaw = null,
@@ -27,13 +9,13 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
   const results = [];
 
   try {
-    // 1. Проверка наличия CI/CD конфигурации
+    // проверка наличия CI/CD конфигурации
     if (!gitlabCIRaw) {
       results.push({
         item: "CI/CD конфигурация",
         status: "INFO",
         details: "CI/CD конфигурация не найдена. Проверка логирования невозможна.",
-        severity: "low"
+        severity: "info"
       });
       return {
         id: "SEC-CICD-10",
@@ -42,10 +24,10 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       };
     }
     
-    // 2. Анализ CI/CD конфигурации на предмет логирования
+    // анализ CI/CD конфигурации на предмет логирования
     const lines = gitlabCIRaw.split('\n');
     
-    // Проверка: Наличие явного логирования
+    // наличие явного логирования
     const hasExplicitLogging = lines.some(line => 
       line.includes('echo') ||
       line.includes('printf') ||
@@ -58,14 +40,14 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     
     results.push({
       item: "Явное логирование в CI/CD",
-      status: hasExplicitLogging ? "OK" : "INFO",
+      status: hasExplicitLogging ? "OK" : "WARN",
       details: hasExplicitLogging
         ? "Обнаружено явное логирование в конфигурации."
-        : "Явное логирование не обнаружено. Рекомендуется добавить информативное логирование.",
+        : "Явное логирование не обнаружено. Рекомендуется добавить логирование.",
       severity: "low"
     });
     
-    // 3. Проверка на логирование ошибок
+    // проверка на логирование ошибок
     const hasErrorLogging = lines.some(line => 
       line.includes('trap') ||
       line.includes('set -e') ||
@@ -85,7 +67,7 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       severity: "medium"
     });
     
-    // 4. Проверка на подавление вывода (что нежелательно)
+    // проверка на подавление вывода (что нежелательно)
     const hasOutputSuppression = lines.some(line => 
       line.includes('> /dev/null') ||
       line.includes('2>&1') && line.includes('/dev/null') ||
@@ -102,7 +84,7 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       });
     }
     
-    // 5. Проверка на использование переменных для управления уровнем логирования
+    // проверка на использование переменных для управления уровнем логирования
     const hasLogLevelVariables = lines.some(line => 
       (line.includes('LOG_LEVEL') || line.includes('DEBUG')) && 
       (line.includes('${') || line.includes('$LOG'))
@@ -110,14 +92,14 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     
     results.push({
       item: "Управление уровнем логирования",
-      status: hasLogLevelVariables ? "OK" : "INFO",
+      status: hasLogLevelVariables ? "OK" : "WARN",
       details: hasLogLevelVariables
         ? "Обнаружены переменные для управления уровнем логирования."
         : "Не обнаружено управление уровнем логирования. Рекомендуется добавить LOG_LEVEL переменные.",
       severity: "low"
     });
     
-    // 6. Проверка на логирование секретов (опасно!)
+    // проверка на логирование секретов (опасно!)
     const secretLoggingPatterns = [
       /echo.*\$.*(PASSWORD|TOKEN|SECRET|KEY)/i,
       /printf.*\$.*(PASSWORD|TOKEN|SECRET|KEY)/i,
@@ -146,7 +128,7 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       });
     }
     
-    // 7. Проверка на мониторинг и алертинг
+    // проверка на мониторинг и алертинг
     const hasMonitoring = lines.some(line => 
       line.includes('alert') ||
       line.includes('notify') ||
@@ -160,14 +142,14 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     
     results.push({
       item: "Интеграция с системами мониторинга",
-      status: hasMonitoring ? "OK" : "INFO",
+      status: "INFO",
       details: hasMonitoring
         ? "Обнаружены интеграции с системами мониторинга и алертинга."
         : "Не обнаружены интеграции с системами мониторинга. Рекомендуется добавить алертинг при сбоях.",
-      severity: "low"
+      severity: "info"
     });
     
-    // 8. Проверка на наличие этапов сбора метрик
+    // проверка на наличие этапов сбора метрик
     const hasMetricsCollection = lines.some(line => 
       line.includes('metrics') ||
       line.includes('prometheus') ||
@@ -178,16 +160,16 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     
     results.push({
       item: "Сбор метрик производительности",
-      status: hasMetricsCollection ? "OK" : "INFO",
+      status: "INFO",
       details: hasMetricsCollection
         ? "Обнаружен сбор метрик производительности."
         : "Не обнаружен сбор метрик производительности. Рекомендуется добавить сбор метрик.",
-      severity: "low"
+      severity: "info"
     });
     
-    // 9. Проверка настройки retention логов в GitLab
+    // проверка настройки retention логов в GitLab
     if (pipelines && pipelines.length > 0) {
-      // Проверяем, доступны ли логи старых пайплайнов
+      // проверяем, доступны ли логи старых пайплайнов
       const oldPipelines = pipelines.filter(p => {
         if (!p.created_at) return false;
         const pipelineDate = new Date(p.created_at);
@@ -206,8 +188,8 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       }
     }
     
-    // 10. Проверка настроек проекта для логирования
-    // Проверка доступных функций логирования GitLab
+    // проверка настроек проекта для логирования
+    // проверка доступных функций логирования GitLab
     const gitlabLoggingFeatures = {
       hasContainerRegistry: projectDetails.container_registry_enabled || false,
       hasWiki: projectDetails.wiki_enabled || false,
@@ -219,12 +201,12 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     
     results.push({
       item: "Функции логирования GitLab",
-      status: enabledFeatures > 2 ? "OK" : "INFO",
+      status: enabledFeatures > 2 ? "OK" : "WARN",
       details: `Включено ${enabledFeatures} из 4 функций логирования GitLab.`,
       severity: "low"
     });
     
-    // 11. Проверка на наличие кастомных логов или артефактов с логами
+    // проверка на наличие кастомных логов или артефактов с логами
     const hasLogArtifacts = lines.some(line => 
       line.includes('artifacts:') && 
       (line.includes('logs') || 
@@ -235,13 +217,13 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     if (hasLogArtifacts) {
       results.push({
         item: "Артефакты с логами",
-        status: "OK",
+        status: "INFO",
         details: "Обнаружено сохранение логов как артефактов.",
         severity: "low"
       });
     }
     
-    // 12. Проверка на наличие этапов security scanning с логами
+    // проверка на наличие этапов security scanning с логами
     const hasSecurityScanLogs = lines.some(line => 
       (line.includes('sast') || 
        line.includes('dast') || 
@@ -252,48 +234,14 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     
     results.push({
       item: "Логи сканирования безопасности",
-      status: hasSecurityScanLogs ? "OK" : "INFO",
+      status: "INFO",
       details: hasSecurityScanLogs
         ? "Обнаружено сохранение логов сканирования безопасности."
         : "Не обнаружено сохранение логов сканирования безопасности. Рекомендуется сохранять отчеты security scanning.",
-      severity: "low"
+      severity: "info"
     });
-    
-    // 13. Проверка на использование structured logging
-    const hasStructuredLogging = lines.some(line => 
-      line.includes('json') && line.includes('log') ||
-      line.includes('structured') ||
-      line.includes('jq') || // Часто используется для JSON логирования
-      line.includes('--json') ||
-      line.includes('--log-format=json')
-    );
-    
-    results.push({
-      item: "Structured logging (JSON)",
-      status: hasStructuredLogging ? "OK" : "INFO",
-      details: hasStructuredLogging
-        ? "Обнаружено structured logging (JSON формат)."
-        : "Не обнаружено structured logging. Рекомендуется использовать JSON формат для логов.",
-      severity: "low"
-    });
-    
-    // 14. Проверка на наличие логов аудита
-    const hasAuditLogging = lines.some(line => 
-      line.includes('audit') ||
-      line.includes('who') && line.includes('when') ||
-      line.includes('timestamp') && line.includes('user')
-    );
-    
-    results.push({
-      item: "Логи аудита",
-      status: hasAuditLogging ? "OK" : "INFO",
-      details: hasAuditLogging
-        ? "Обнаружено логирование аудита (кто, что, когда)."
-        : "Не обнаружено логирование аудита. Рекомендуется добавлять информацию о пользователе и времени.",
-      severity: "low"
-    });
-    
-    // 15. Проверка на наличие интеграции с SIEM системами
+  
+    // проверка на наличие интеграции с SIEM системами
     const hasSIEMIntegration = lines.some(line => 
       line.includes('splunk') ||
       line.includes('elk') ||
@@ -305,14 +253,14 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
     
     results.push({
       item: "Интеграция с SIEM системами",
-      status: hasSIEMIntegration ? "OK" : "INFO",
+      status: "INFO",
       details: hasSIEMIntegration
         ? "Обнаружена интеграция с SIEM системой."
         : "Не обнаружена интеграция с SIEM системами. Рекомендуется настройка для enterprise окружений.",
-      severity: "low"
+      severity: "info"
     });
     
-    // 16. Проверка репозитория на наличие конфигураций логирования
+    // проверка репозитория на наличие конфигураций логирования
     if (repoTree && repoTree.length > 0) {
       const loggingConfigFiles = repoTree.filter(file => 
         file.name && (
@@ -334,12 +282,12 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
           item: "Конфигурационные файлы логирования",
           status: "INFO",
           details: `Обнаружены потенциальные конфигурационные файлы логирования: ${loggingConfigFiles.map(f => f.name).join(', ')}`,
-          severity: "low"
+          severity: "info"
         });
       }
     }
     
-    // 17. Проверка на наличие документации по логированию
+    // проверка на наличие документации по логированию
     if (repoTree && repoTree.length > 0) {
       const docsFiles = repoTree.filter(file => 
         file.name && (
@@ -351,14 +299,12 @@ module.exports = async function checkSEC10(projectId, projectData, gitlab) {
       );
       
       let hasLoggingDocs = false;
-      // Для этой проверки нужны дополнительные запросы к GitLab API
-      // Оставляем как INFO, что требуется дополнительная проверка
       
       results.push({
         item: "Документация по логированию и мониторингу",
         status: "INFO",
         details: "Для проверки документации требуется дополнительный анализ содержимого файлов.",
-        severity: "low"
+        severity: "info"
       });
     }
     

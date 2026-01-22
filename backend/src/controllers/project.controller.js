@@ -32,7 +32,6 @@ module.exports = {
         }
     },
 
-    // helper: upsert projects list from GitLab
     syncProjectsFromGitLab: async () => {
         const external = await gitlab.getAllProjects();
         if (!Array.isArray(external)) return { added: 0, updated: 0, total: 0 };
@@ -50,16 +49,12 @@ module.exports = {
         return { added, updated, total: external.length };
     },
 
-    // Full scan flow (used by cron and POST /api/scan/full)
     fullScan: async (req, res) => {
         try {
-            // 1) sync projects
             const syncRes = await module.exports.syncProjectsFromGitLab();
             
-            // 2) get all projects from DB
             const projects = await Project.findAll();
             
-            // 3) scan each project and write ScanResult
             const scanResults = [];
             
             for (const p of projects) {
@@ -79,7 +74,7 @@ module.exports = {
                 });
             }
             
-            // 4) Получаем актуальные данные для email уведомления
+            // Получаем актуальные данные для email уведомления
             const projectsWithScans = await Promise.all(projects.map(async p => {
                 const lastScan = await ScanResult.findOne({
                     where: { projectId: p.id },
@@ -91,7 +86,7 @@ module.exports = {
                 };
             }));
             
-            // 5) Отправляем email уведомление (асинхронно, не блокируем ответ)
+            // Отправляем email уведомление
             emailService.sendFullScanNotification(projectsWithScans, {
                 totalProjects: projects.length,
                 scannedAt: new Date()
@@ -115,7 +110,7 @@ module.exports = {
         }
     },
 
-    // GET /api/projects/:projectId -> details from DB
+    // GET /api/projects/:projectId детали из БД
     getProjectDetails: async (req, res) => {
         try {
             const id = req.params.projectId;

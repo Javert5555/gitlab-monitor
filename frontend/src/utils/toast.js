@@ -4,7 +4,7 @@ export const useAppToast = () => {
   const toast = useToast()
   
   return {
-    // Успешные операции
+    // успешные операции
     success: (message, title = 'Успех') => {
       toast.success(message, {
         title,
@@ -12,7 +12,7 @@ export const useAppToast = () => {
       })
     },
     
-    // Ошибки
+    // ошибки
     error: (message, title = 'Ошибка') => {
       toast.error(message, {
         title,
@@ -20,7 +20,7 @@ export const useAppToast = () => {
       })
     },
     
-    // Предупреждения
+    // предупреждения
     warning: (message, title = 'Внимание') => {
       toast.warning(message, {
         title,
@@ -28,7 +28,7 @@ export const useAppToast = () => {
       })
     },
     
-    // Информационные сообщения
+    // информационные сообщения
     info: (message, title = 'Информация') => {
       toast.info(message, {
         title,
@@ -36,7 +36,7 @@ export const useAppToast = () => {
       })
     },
     
-    // Сканирование начато
+    // сканирование начато
     scanStarted: (projectName = null) => {
       const message = projectName 
         ? `Сканирование проекта "${projectName}" начато`
@@ -49,7 +49,7 @@ export const useAppToast = () => {
       })
     },
     
-    // Сканирование завершено успешно
+    // сканирование завершено успешно
     scanSuccess: (projectName = null, riskCount = 0) => {
       const message = projectName
         ? `Проект "${projectName}" отсканирован. Активных угроз: ${riskCount}`
@@ -70,7 +70,7 @@ export const useAppToast = () => {
       }
     },
     
-    // Ошибка сканирования
+    // ошибка сканирования
     scanError: (projectName = null, errorMessage = '') => {
       const message = projectName
         ? `Ошибка сканирования проекта "${projectName}": ${errorMessage}`

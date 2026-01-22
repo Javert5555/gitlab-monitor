@@ -55,7 +55,6 @@ function detectProdJob(jobKey, jobConfig) {
   let isAutoRun = false;
   let jobDetails = {};
 
-  // Детектирование PRODUCTION джоба
   if (checkProdByEnvironment(jobConfig)) {
     isProdJob = true;
     jobDetails.environment = typeof jobConfig.environment === 'string' 
@@ -82,7 +81,6 @@ function detectProdJob(jobKey, jobConfig) {
     );
   }
 
-  // Детектирование автоматического запуска
   if (isProdJob) {
     isAutoRun = checkAutoRunConditions(jobConfig, jobDetails);
   }
@@ -121,7 +119,6 @@ function checkProdByTags(jobConfig) {
  * Проверяет условия автоматического запуска job
  */
 function checkAutoRunConditions(jobConfig, jobDetails) {
-  // 1. Проверка rules (новый синтаксис)
   if (jobConfig.rules && Array.isArray(jobConfig.rules)) {
     const hasAutoRule = jobConfig.rules.some(rule => {
       const hasManualWhen = rule.when === 'manual' || rule.when === 'never';
@@ -150,7 +147,7 @@ function checkAutoRunConditions(jobConfig, jobDetails) {
     }
   }
   
-  // 2. Проверка except (отсутствие manual)
+  // Проверка except (отсутствие manual)
   if (jobConfig.except) {
     const exceptValues = Array.isArray(jobConfig.except) ? jobConfig.except : [jobConfig.except];
     const hasManualExcept = exceptValues.includes('manual');
@@ -160,13 +157,13 @@ function checkAutoRunConditions(jobConfig, jobDetails) {
     }
   }
   
-  // 3. Проверка when
+  // Проверка when
   if (!jobConfig.when || (jobConfig.when && jobConfig.when !== 'manual')) {
     jobDetails.autoReason = 'when not set to manual';
     return true;
   }
   
-  // 4. Проверка if условий
+  // Проверка if условий
   if (jobConfig.if) {
     const ifConditions = Array.isArray(jobConfig.if) ? jobConfig.if : [jobConfig.if];
     const hasProdCondition = ifConditions.some(condition => 
@@ -184,7 +181,7 @@ function checkAutoRunConditions(jobConfig, jobDetails) {
     }
   }
   
-  // 5. Проверка tags на автоматический запуск
+  // проверка tags на автоматический запуск
   if (jobConfig.tags) {
     const tags = Array.isArray(jobConfig.tags) ? jobConfig.tags : [jobConfig.tags];
     const hasProdTag = tags.some(tag => 
@@ -205,7 +202,7 @@ function checkAutoRunConditions(jobConfig, jobDetails) {
     }
   }
   
-  // 6. Если нет никаких ограничений
+  // Если нет никаких ограничений
   if (!jobConfig.rules && !jobConfig.only && !jobConfig.except && !jobConfig.when && !jobConfig.if) {
     jobDetails.autoReason = 'no restrictions found';
     return true;
@@ -375,7 +372,7 @@ function checkAutoMR(mergeRequests) {
 function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
     const suspiciousPipelines = [];
     
-    // 1. Проверяем наличие пайплайнов, запущенных по push
+    // проверяем наличие пайплайнов, запущенных по push
     if (pipelines && pipelines.length > 0) {
         const pushPipelines = pipelines.filter(
             (p) => p.status === "success" && 
@@ -385,11 +382,11 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
         );
         
         if (pushPipelines.length > 0) {
-            suspiciousPipelines.push(...pushPipelines.slice(0, 3)); // Берем первые 3 для примера
+            suspiciousPipelines.push(...pushPipelines.slice(0, 3)); // берем первые 3 для примера
         }
     }
     
-    // 2. Анализируем workflow.rules в .gitlab-ci.yml
+    // анализируем workflow.rules в .gitlab-ci.yml
     let workflowAllowsPush = true; // По умолчанию push разрешен, если нет workflow.rules
     let workflowRuleDetails = '';
     
@@ -402,7 +399,6 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
                 
                 // Проверяем, есть ли правило, которое блокирует push
                 const hasPushBlockRule = workflowRules.some(rule => {
-                    // Правило, которое явно блокирует push
                     if (rule.if) {
                         const ifCondition = Array.isArray(rule.if) ? rule.if : [rule.if];
                         return ifCondition.some(condition => 
@@ -428,7 +424,7 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
                     return false;
                 });
                 
-                // Проверяем конкретно правило: if: $CI_PIPELINE_SOURCE != "push"
+                // Проверяем конкретно правило запрещен ли запус пайплайна через пуш
                 const hasNotPushRule = workflowRules.some(rule => {
                     if (rule.if) {
                         const ifCondition = Array.isArray(rule.if) ? rule.if : [rule.if];
@@ -459,7 +455,7 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
         }
     }
     
-    // 3. Формируем результат
+    // Формируем результат
     let status = "OK";
     let details = "";
     
@@ -467,7 +463,7 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
         status = "WARN";
         details = `Обнаружены успешные пайплайны, запущенные по push (${suspiciousPipelines.length} шт.). workflow.rules не ограничивает push.`;
     } else if (suspiciousPipelines.length > 0 && !workflowAllowsPush) {
-        status = "INFO";
+        status = "OK";
         details = `Обнаружены пайплайны по push, но workflow.rules настроен корректно.`;
     } else if (!workflowAllowsPush) {
         status = "OK";
@@ -481,7 +477,7 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
         item: "Запуск пайплайна по push (без MR/Review)",
         status: status,
         details: details,
-        severity: "critical" // Фиксированный уровень критичности
+        severity: "critical"
     };
 }
 
@@ -500,7 +496,7 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
   const results = [];
 
   try {
-    // 1. Проверка автоматического деплоя
+    // Проверка автоматического деплоя
     results.push(gitlabCIRaw ? checkAutoDeploy(gitlabCIRaw) : {
       item: "Автоматический деплой на production",
       status: "INFO",
@@ -508,13 +504,13 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
       severity: "critical"
     });
 
-    // 2. Проверка force push защиты
+    // Проверка force push защиты
     results.push(checkForcePushProtection(protectedBranches, branches));
 
-    // 6. Проверка злоупотребления auto-MR
+    // Проверка злоупотребления auto-MR
     results.push(checkAutoMR(mergeRequests));
 
-    // 7. Проверка пайплайнов без проверок
+    // Проверка пайплайнов без проверок
     // results.push(checkPipelinesWithoutChecks(pipelines));
     results.push(checkPipelinesWithoutChecks(pipelines, gitlabCIRaw));
 

@@ -2,7 +2,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
   const results = [];
   
   try {
-    // 1. Проверка наличия CI/CD конфигурации
+    // проверка наличия CI/CD конфигурации
     const gitlabCIRaw = projectData.gitlabCIRaw;
     
     if (!gitlabCIRaw) {
@@ -10,7 +10,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "CI/CD конфигурация",
         status: "INFO",
         details: "CI/CD конфигурация не найдена. Проверка валидации артефактов невозможна.",
-        severity: "low"
+        severity: "info"
       });
       return {
         id: "SEC-CICD-9",
@@ -19,10 +19,10 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       };
     }
     
-    // 2. Анализ CI/CD конфигурации на предмет валидации артефактов
+    // анализ CI/CD конфигурации на предмет валидации артефактов
     const lines = gitlabCIRaw.split('\n');
     
-    // Проверка: Наличие этапов проверки целостности
+    // наличие этапов проверки целостности
     const hasIntegrityChecks = lines.some(line => 
       line.includes('checksum') ||
       line.includes('sha256') ||
@@ -33,16 +33,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       line.includes('integrity')
     );
     
-    // results.push({
-    //   item: "Проверка целостности артефактов в CI/CD",
-    //   status: hasIntegrityChecks ? "OK" : "WARN",
-    //   details: hasIntegrityChecks
-    //     ? "Обнаружены проверки целостности артефактов в конфигурации."
-    //     : "Не обнаружены проверки целостности артефактов. Рекомендуется добавить проверку контрольных сумм.",
-    //   severity: "medium"
-    // });
-    
-    // 3. Проверка на использование подписанных артефактов
+    // проверка на использование подписанных артефактов
     const hasSignatureChecks = lines.some(line => 
       line.includes('gpg') ||
       line.includes('pgp') ||
@@ -51,16 +42,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       line.includes('notary')
     );
     
-    // results.push({
-    //   item: "Проверка подписей артефактов",
-    //   status: hasSignatureChecks ? "OK" : "INFO",
-    //   details: hasSignatureChecks
-    //     ? "Обнаружены проверки цифровых подписей артефактов."
-    //     : "Не обнаружены проверки цифровых подписей. Рекомендуется использовать подписанные артефакты.",
-    //   severity: "low"
-    // });
-    
-    // 4. Проверка на загрузку артефактов из внешних источников
+    // проверка на загрузку артефактов из внешних источников
     const externalDownloads = [];
     const downloadPatterns = [
       { pattern: /curl.*-o.*(http|https):\/\//i, description: "Загрузка через curl" },
@@ -83,10 +65,10 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
     });
     
     if (externalDownloads.length > 0) {
-      // Проверяем, есть ли валидация для этих загрузок
+      // проверяем, есть ли валидация для этих загрузок
       const downloadsWithoutValidation = [];
       externalDownloads.forEach(download => {
-        // Ищем проверки целостности вблизи загрузки
+        // ищем проверки целостности вблизи загрузки
         const start = Math.max(0, download.line - 10);
         const end = Math.min(lines.length, download.line + 10);
         const context = lines.slice(start - 1, end);
@@ -109,10 +91,17 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
           details: `Обнаружены загрузки артефактов без проверки целостности:\n${downloadsWithoutValidation.map(d => `Строка ${d.line}: ${d.description} - "${d.content}"`).join('\n')}`,
           severity: "high"
         });
+      } else {
+        results.push({
+          item: "Загрузка артефактов без проверки целостности",
+          status: "OK",
+          details: `Загрузка артефактов без проверки целостности не обнаружена`,
+          severity: "high"
+        });
       }
     }
     
-    // 5. Проверка на использование артефактов между stages
+    // проверка на использование артефактов между stages
     const artifactTransfers = [];
     const artifactPatterns = [
       /artifacts:\s*$/i,
@@ -124,13 +113,13 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
     let currentJob = '';
     
     lines.forEach((line, index) => {
-      // Определяем начало job
+      // определяем начало job
       if (line.includes(':') && !line.startsWith(' ') && !line.startsWith('\t') && 
           !line.includes('#') && line.trim() !== '') {
         currentJob = line.split(':')[0].trim();
       }
       
-      // Определяем секцию artifacts
+      // определяем секцию artifacts
       if (artifactPatterns.some(pattern => pattern.test(line))) {
         inArtifactsSection = true;
         artifactTransfers.push({
@@ -140,7 +129,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         });
       }
       
-      // Выход из секции artifacts
+      // выход из секции artifacts
       if (inArtifactsSection && 
           line.trim() !== '' && 
           !line.startsWith(' ') && 
@@ -156,11 +145,11 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Передача артефактов между stages",
         status: "INFO",
         details: `Обнаружена передача артефактов в ${artifactTransfers.length} job(s). Убедитесь в их целостности.`,
-        severity: "low"
+        severity: "info"
       });
     }
     
-    // 6. Проверка на использование кеширования артефактов
+    // проверка на использование кеширования артефактов
     const hasCaching = lines.some(line => line.includes('cache:') && line.trim() !== 'cache:');
     
     if (hasCaching) {
@@ -168,24 +157,24 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Кеширование артефактов",
         status: "INFO",
         details: "Обнаружено кеширование артефактов. Убедитесь, что кешированные артефакты валидируются при использовании.",
-        severity: "low"
+        severity: "info"
       });
     }
     
-    // 7. Проверка на использование Docker образов
+    // проверка на использование Docker образов
     const dockerImages = [];
     const imagePattern = /image:\s*["']?([^"'\s]+)["']?/gi;
     let match;
     
     while ((match = imagePattern.exec(gitlabCIRaw)) !== null) {
       const image = match[1];
-      if (!image.includes('$') && !image.startsWith('.')) { // Исключаем переменные и локальные пути
+      if (!image.includes('$') && !image.startsWith('.')) { // исключаем переменные и локальные пути
         dockerImages.push(image);
       }
     }
     
     if (dockerImages.length > 0) {
-      // Проверяем, используются ли теги вместо digest
+      // проверяем, используются ли теги вместо digest
       const imagesWithTags = dockerImages.filter(image => 
         image.includes(':') && !image.includes('@sha256:')
       );
@@ -197,10 +186,17 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
           details: `Обнаружены Docker образы с тегами: ${imagesWithTags.join(', ')}. Используйте digest (@sha256:...) для гарантии целостности.`,
           severity: "high"
         });
+      } else {
+        results.push({
+          item: "Docker образы с тегами вместо digest",
+          status: "OK",
+          details: `Docker образы с тегами не обнаружены.`,
+          severity: "high"
+        });
       }
     }
     
-    // 8. Проверка на использование внешних зависимостей
+    // проверка на использование внешних зависимостей
     const externalDependencies = [];
     const dependencyPatterns = [
       /npm install/i,
@@ -231,13 +227,13 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       });
     }
     
-    // 9. Проверка на наличие проверок скачиваемых скриптов
+    // проверка на наличие проверок скачиваемых скриптов
     const scriptDownloads = [];
     const scriptPattern = /(curl|wget).*\.(sh|py|js)$/i;
     
     lines.forEach((line, index) => {
       if (scriptPattern.test(line)) {
-        // Проверяем, есть ли проверка скачанного скрипта
+        // проверяем, есть ли проверка скачанного скрипта
         const start = Math.max(0, index - 5);
         const end = Math.min(lines.length, index + 5);
         const context = lines.slice(start, end);
@@ -267,10 +263,17 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
           details: `Обнаружено скачивание скриптов без проверки целостности:\n${unvalidatedScripts.map(s => `Строка ${s.line}: "${s.content}"`).join('\n')}`,
           severity: "critical"
         });
+      } else {
+        results.push({
+          item: "Скачивание скриптов без проверки целостности",
+          status: "OK",
+          details: `Скачивание скриптов без проверки целостности не обнаружено`,
+          severity: "critical"
+        });
       }
     }
     
-    // 10. Проверка на использование безопасных протоколов загрузки
+    // проверка на использование безопасных протоколов загрузки
     const insecureDownloads = lines.filter((line, index) => 
       (line.includes('curl http://') || line.includes('wget http://')) &&
       !line.includes('localhost') &&
@@ -279,14 +282,21 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
     
     if (insecureDownloads.length > 0) {
       results.push({
-        item: "Загрузка по HTTP без шифрования",
+        item: "Загрузка по HTTP",
         status: "DANGER",
         details: `Обнаружена загрузка по HTTP:\n${insecureDownloads.map((line, idx) => `Строка ${lines.indexOf(line) + 1}: "${line.trim()}"`).join('\n')}`,
         severity: "high"
       });
+    } else {
+      results.push({
+        item: "Загрузка по HTTP",
+        status: "OK",
+        details: `Загрузка по HTTP не обнаружена`,
+        severity: "high"
+      });
     }
     
-    // 11. Проверка репозитория на наличие файлов проверки целостности
+    // проверка репозитория на наличие файлов проверки целостности
     const repoTree = projectData.repoTree || [];
     const integrityFiles = repoTree.filter(file => 
       file.name && (
@@ -302,13 +312,13 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
     if (integrityFiles.length > 0) {
       results.push({
         item: "Файлы проверки целостности в репозитории",
-        status: "OK",
+        status: "info",
         details: `Обнаружены файлы проверки целостности: ${integrityFiles.map(f => f.name).join(', ')}`,
-        severity: "low"
+        severity: "info"
       });
     }
     
-    // 12. Проверка на наличие .npmrc и других конфигурационных файлов
+    // проверка на наличие .npmrc и других конфигурационных файлов
     const npmrcFile = repoTree.find(file => file.name === '.npmrc');
     const pipConfFile = repoTree.find(file => file.name === 'pip.conf' || file.name === '.pypirc');
     
@@ -317,7 +327,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Конфигурация npm",
         status: "INFO",
         details: "Обнаружен файл .npmrc. Возможна настройка подписи пакетов.",
-        severity: "low"
+        severity: "info"
       });
     }
     
@@ -326,7 +336,7 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Конфигурация pip",
         status: "INFO",
         details: "Обнаружен файл конфигурации pip. Возможна настройка подписи пакетов.",
-        severity: "low"
+        severity: "info"
       });
     }
     
