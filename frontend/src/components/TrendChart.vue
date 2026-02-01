@@ -334,17 +334,17 @@ defineExpose({
 .no-data-message {
   text-align: center;
   padding: 3rem;
-  color: #7f8c8d;
+  color: #a0a0c0;
   font-style: italic;
-  background: #f8f9fa;
+  background: #2d2d44;
   border-radius: 8px;
-  border: 1px dashed #bdc3c7;
+  border: 1px dashed #3a3a4e;
 }
 
 .hint {
   font-size: 0.9rem;
   margin-top: 0.5rem;
-  color: #95a5a6;
+  color: #8a8aa0;
 }
 
 .chart-container {
@@ -352,16 +352,21 @@ defineExpose({
   height: v-bind(height + 'px');
   width: 100%;
   margin: 1rem 0;
+  background: #1e1e2e;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #3a3a4e;
 }
 
 .chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  justify-content: center;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #ecf0f1;
+  gap: 1rem;
+  padding: 1rem;
+  background: #2d2d44;
+  border-radius: 8px;
+  margin-top: 1rem;
+  border: 1px solid #3a3a4e;
 }
 
 .legend-item {
@@ -369,8 +374,15 @@ defineExpose({
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: #2c3e50;
+  color: #e0e0e0;
   cursor: default;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.legend-item:hover {
+  background: #3a3a4e;
 }
 
 .legend-color {
@@ -379,6 +391,7 @@ defineExpose({
   border-radius: 50%;
   display: inline-block;
   transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .legend-item:hover .legend-color {

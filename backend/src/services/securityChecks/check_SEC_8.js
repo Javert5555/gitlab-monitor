@@ -45,7 +45,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
       details: totalWebhooks > 0
         ? `Обнаружено webhooks: Чат (${webhookCategories.chat.length}), CI/CD (${webhookCategories.ciCd.length}), Мониторинг (${webhookCategories.monitoring.length}), Деплой (${webhookCategories.deployment.length}), Другие (${webhookCategories.other.length})`
         : "Внешние интеграции не обнаружены.",
-      severity: "info"
     });
     
     // проверка безопасности webhooks
@@ -87,9 +86,8 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
       
       results.push({
         item: "Небезопасные webhooks",
-        status: "DANGER",
+        status: "WARN",
         details: `Обнаружены проблемы безопасности в webhooks:\n${issuesDetails}`,
-        severity: "high"
       });
     }
     
@@ -142,7 +140,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
         item: "API ключи внешних сервисов",
         status: "INFO",
         details: `Обнаружены API ключи внешних сервисов: ${details.join(', ')}`,
-        severity: "info"
       });
     }
     
@@ -197,7 +194,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
           item: "Внешние сервисы в CI/CD конфигурации",
           status: "INFO",
           details: `Обнаружены ссылки на внешние сервисы:\n${categoryDetails}`,
-          severity: "info"
         });
         
         // проверка на небезопасное использование внешних сервисов
@@ -225,9 +221,8 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
         if (insecureUsage.length > 0) {
           results.push({
             item: "Небезопасное использование внешних сервисов",
-            status: "DANGER",
+            status: "WARN",
             details: `Обнаружено небезопасное использование внешних сервисов:\n${insecureUsage.map(u => `Строка ${u.line}: ${u.service} - "${u.content}"`).join('\n')}`,
-            severity: "critical"
           });
         }
       }
@@ -236,7 +231,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
         item: "Анализ CI/CD конфигурации",
         status: "OK",
         details: "CI/CD конфигурация не найдена для проверки внешних сервисов.",
-        severity: "critical"
       });
     }
     
@@ -257,7 +251,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
           item: "Зависимости от внешних пакетов",
           status: "INFO",
           details: `Обнаружены файлы зависимостей: ${packageFiles.map(f => f.name).join(', ')}. Зависимости загружаются из внешних реестров.`,
-          severity: "info"
         });
       }
     }
@@ -291,7 +284,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
         item: "Использование SaaS решений",
         status: "INFO",
         details: `Обнаружены индикаторы использования SaaS:\n${saasIndicators.slice(0, 5).join('\n')}${saasIndicators.length > 5 ? '\n...' : ''}`,
-        severity: "info"
       });
     }
     
@@ -310,7 +302,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
           item: "Файлы политик и руководств",
           status: "INFO",
           details: `Обнаружены файлы политик: ${policyFiles.map(f => f.name).join(', ')}.`,
-          severity: "info"
         });
       }
     }
@@ -344,7 +335,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
           item: "Устаревшие или небезопасные сервисы",
           status: "WARN",
           details: `Обнаружены устаревшие сервисы:\n${deprecatedServices.map(s => `Строка ${s.line}: ${s.name} (${s.reason}) - "${s.content}"`).join('\n')}`,
-          severity: "medium"
         });
       }
     }
@@ -355,7 +345,6 @@ module.exports = async function checkSEC8(projectId, projectData, gitlab) {
       item: "Проверка неконтролируемого использования сторонних сервисов",
       status: "FAIL",
       details: `Ошибка при выполнении проверки: ${error.message}`,
-      severity: "info"
     });
   }
   

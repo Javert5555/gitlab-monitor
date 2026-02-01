@@ -36,21 +36,23 @@ const riskClass = computed(() => {
   font-weight: bold;
   font-size: 0.9rem;
   color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .risk-none {
-  background: #27ae60;
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
 }
 
 .risk-low {
-  background: #f39c12;
+  background: linear-gradient(135deg, #ffb300 0%, #ff8f00 100%);
 }
 
 .risk-medium {
-  background: #e67e22;
+  background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
 }
 
 .risk-high {
-  background: #e74c3c;
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
 }
 </style>

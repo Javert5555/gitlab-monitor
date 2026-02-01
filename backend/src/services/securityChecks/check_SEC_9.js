@@ -10,7 +10,6 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "CI/CD конфигурация",
         status: "INFO",
         details: "CI/CD конфигурация не найдена. Проверка валидации артефактов невозможна.",
-        severity: "info"
       });
       return {
         id: "SEC-CICD-9",
@@ -87,16 +86,14 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       if (downloadsWithoutValidation.length > 0) {
         results.push({
           item: "Загрузка артефактов без проверки целостности",
-          status: "DANGER",
+          status: "WARN",
           details: `Обнаружены загрузки артефактов без проверки целостности:\n${downloadsWithoutValidation.map(d => `Строка ${d.line}: ${d.description} - "${d.content}"`).join('\n')}`,
-          severity: "high"
         });
       } else {
         results.push({
           item: "Загрузка артефактов без проверки целостности",
           status: "OK",
           details: `Загрузка артефактов без проверки целостности не обнаружена`,
-          severity: "high"
         });
       }
     }
@@ -145,7 +142,6 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Передача артефактов между stages",
         status: "INFO",
         details: `Обнаружена передача артефактов в ${artifactTransfers.length} job(s). Убедитесь в их целостности.`,
-        severity: "info"
       });
     }
     
@@ -157,7 +153,6 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Кеширование артефактов",
         status: "INFO",
         details: "Обнаружено кеширование артефактов. Убедитесь, что кешированные артефакты валидируются при использовании.",
-        severity: "info"
       });
     }
     
@@ -182,16 +177,14 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       if (imagesWithTags.length > 0) {
         results.push({
           item: "Docker образы с тегами вместо digest",
-          status: "DANGER",
+          status: "WARN",
           details: `Обнаружены Docker образы с тегами: ${imagesWithTags.join(', ')}. Используйте digest (@sha256:...) для гарантии целостности.`,
-          severity: "high"
         });
       } else {
         results.push({
           item: "Docker образы с тегами вместо digest",
           status: "OK",
           details: `Docker образы с тегами не обнаружены.`,
-          severity: "high"
         });
       }
     }
@@ -223,7 +216,6 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Установка внешних зависимостей",
         status: "INFO",
         details: `Обнаружена установка внешних зависимостей в ${externalDependencies.length} месте(ах). Убедитесь в использовании lock-файлов.`,
-        severity: "info"
       });
     }
     
@@ -259,16 +251,14 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       if (unvalidatedScripts.length > 0) {
         results.push({
           item: "Скачивание скриптов без проверки целостности",
-          status: "DANGER",
+          status: "WARN",
           details: `Обнаружено скачивание скриптов без проверки целостности:\n${unvalidatedScripts.map(s => `Строка ${s.line}: "${s.content}"`).join('\n')}`,
-          severity: "critical"
         });
       } else {
         results.push({
           item: "Скачивание скриптов без проверки целостности",
           status: "OK",
           details: `Скачивание скриптов без проверки целостности не обнаружено`,
-          severity: "critical"
         });
       }
     }
@@ -283,16 +273,14 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
     if (insecureDownloads.length > 0) {
       results.push({
         item: "Загрузка по HTTP",
-        status: "DANGER",
+        status: "WARN",
         details: `Обнаружена загрузка по HTTP:\n${insecureDownloads.map((line, idx) => `Строка ${lines.indexOf(line) + 1}: "${line.trim()}"`).join('\n')}`,
-        severity: "high"
       });
     } else {
       results.push({
         item: "Загрузка по HTTP",
         status: "OK",
         details: `Загрузка по HTTP не обнаружена`,
-        severity: "high"
       });
     }
     
@@ -314,11 +302,9 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Файлы проверки целостности в репозитории",
         status: "info",
         details: `Обнаружены файлы проверки целостности: ${integrityFiles.map(f => f.name).join(', ')}`,
-        severity: "info"
       });
     }
     
-    // проверка на наличие .npmrc и других конфигурационных файлов
     const npmrcFile = repoTree.find(file => file.name === '.npmrc');
     const pipConfFile = repoTree.find(file => file.name === 'pip.conf' || file.name === '.pypirc');
     
@@ -327,7 +313,6 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Конфигурация npm",
         status: "INFO",
         details: "Обнаружен файл .npmrc. Возможна настройка подписи пакетов.",
-        severity: "info"
       });
     }
     
@@ -336,7 +321,6 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
         item: "Конфигурация pip",
         status: "INFO",
         details: "Обнаружен файл конфигурации pip. Возможна настройка подписи пакетов.",
-        severity: "info"
       });
     }
     
@@ -346,7 +330,6 @@ module.exports = async function checkSEC9(projectId, projectData, gitlab) {
       item: "Проверка валидации целостности артефактов",
       status: "FAIL",
       details: `Ошибка при выполнении проверки: ${error.message}`,
-      severity: "info"
     });
   }
   

@@ -39,10 +39,9 @@ function checkAutoDeploy(raw) {
   } catch (error) {
     return {
       item: "Автоматический деплой на production",
-      status: "DANGER",
+      status: "WARN",
       details: `Ошибка парсинга .gitlab-ci.yml: ${error.message}`,
       detectedJobs: [],
-      severity: 'critical'
     };
   }
 }
@@ -225,10 +224,9 @@ function formatAutoDeployResult(autoDeploy, detectedJobs) {
   
   return {
     item: "Автоматический деплой на production",
-    status: autoDeploy ? "DANGER" : "OK",
+    status: autoDeploy ? "WARN" : "OK",
     details: details,
     detectedJobs: detectedJobs,
-    severity: "critical"
   };
 }
 
@@ -341,11 +339,10 @@ function formatForcePushResult(forcePushDetected, unprotectedBranches, forcePush
 
   return {
     item: "Force push защита в production ветках",
-    status: forcePushDetected ? "DANGER" : "OK",
+    status: forcePushDetected ? "WARN" : "OK",
     details: details,
     unprotectedBranches: unprotectedBranches,
     forcePushAllowedBranches: forcePushAllowedBranches,
-    severity: "critical"
   };
 }
 
@@ -353,7 +350,6 @@ function formatForcePushResult(forcePushDetected, unprotectedBranches, forcePush
  * Проверка MR без ревью
  */
 function checkAutoMR(mergeRequests) {
-  // console.log(mergeRequests)
   const autoMerges = mergeRequests.filter(
     (mr) => mr.merge_when_pipeline_succeeds
   );
@@ -362,10 +358,8 @@ function checkAutoMR(mergeRequests) {
     item: "Обнаружено злоупотребление правилом автослияния в CI",
     status: autoMerges.length > 0 ? "WARN" : "OK",
     details: autoMerges.length
-      // ? `${autoMerges.length} слияний выполнено без ревью`
       ? `Правило merge_when_pipeline_succeeds, установленое в true, обнаружены в MR c id: ${autoMerges.map((mr) => String(mr.id)).join(', ')}`
       : "Злоупотребление правилом автослияния в CI не обнаружены",
-    severity: "high"
   };
 }
 
@@ -382,7 +376,7 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
         );
         
         if (pushPipelines.length > 0) {
-            suspiciousPipelines.push(...pushPipelines.slice(0, 3)); // берем первые 3 для примера
+            suspiciousPipelines.push(...pushPipelines.slice(0, 3));
         }
     }
     
@@ -477,7 +471,6 @@ function checkPipelinesWithoutChecks(pipelines, gitLabCIRaw) {
         item: "Запуск пайплайна по push (без MR/Review)",
         status: status,
         details: details,
-        severity: "critical"
     };
 }
 
@@ -501,7 +494,6 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
       item: "Автоматический деплой на production",
       status: "INFO",
       details: ".gitlab-ci.yml не найден",
-      severity: "critical"
     });
 
     // Проверка force push защиты
@@ -520,7 +512,6 @@ module.exports = async function checkSEC1(projectId, projectData, gitlab) {
       item: "Проверка механизмов управления потоком",
       status: "FAIL",
       details: `Ошибка при выполнении проверки: ${error.message}`,
-      severity: "info"
     });
   }
 

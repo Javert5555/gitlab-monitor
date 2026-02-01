@@ -114,18 +114,21 @@ watch(() => route.params.projectId, (newProjectId) => {
   text-align: center;
   padding: 3rem;
   font-size: 1.2rem;
-  color: #7f8c8d;
+  color: #a0a0c0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  background: #1e1e2e;
+  border-radius: 12px;
+  border: 1px solid #3a3a4e;
 }
 
 .loading .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  border: 4px solid #3a3a4e;
+  border-top: 4px solid #bb86fc;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -136,22 +139,27 @@ watch(() => route.params.projectId, (newProjectId) => {
   align-items: flex-start;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #ecf0f1;
+  border-bottom: 2px solid #3a3a4e;
+  background: #1e1e2e;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #3a3a4e;
 }
 
 .header-main h1 {
-  color: #2c3e50;
+  color: #bb86fc;
   margin-bottom: 0.5rem;
 }
 
 .project-url a {
-  color: #3498db;
+  color: #64b5f6;
   text-decoration: none;
   font-size: 1.1rem;
 }
 
 .project-url a:hover {
   text-decoration: underline;
+  color: #90caf9;
 }
 
 .project-meta {
@@ -161,11 +169,12 @@ watch(() => route.params.projectId, (newProjectId) => {
 }
 
 .meta-item {
-  background: #ecf0f1;
+  background: #2d2d44;
   padding: 0.25rem 0.75rem;
   border-radius: 15px;
   font-size: 0.8rem;
-  color: #7f8c8d;
+  color: #a0a0c0;
+  border: 1px solid #3a3a4e;
 }
 
 .header-actions {
@@ -181,38 +190,44 @@ watch(() => route.params.projectId, (newProjectId) => {
   padding: 0.75rem 1rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .scan-button {
-  background: #e67e22;
+  background: linear-gradient(135deg, #ff9800 0%, #ef6c00 100%);
 }
 
 .scan-button.loading {
-  background: #95a5a6;
+  background: linear-gradient(135deg, #424242 0%, #616161 100%);
 }
 
 .scan-button:hover:not(:disabled) {
-  background: #d35400;
+  background: linear-gradient(135deg, #ffa726 0%, #f57c00 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .refresh-button {
-  background: #3498db;
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
 }
 
 .refresh-button:hover:not(:disabled) {
-  background: #2980b9;
+  background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .scan-button:disabled,
 .refresh-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .button-loading {
@@ -230,17 +245,13 @@ watch(() => route.params.projectId, (newProjectId) => {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .error-message {
-  background: #e74c3c;
+  background: linear-gradient(135deg, #b00020 0%, #cf6679 100%);
   color: white;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 2rem;
   text-align: center;
+  border: 1px solid #ff5252;
 }
 </style>

@@ -5,7 +5,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "scan:semgrep": "docker run --rm -v $(pwd):/src semgrep/semgrep scan --config auto --json",
+    "scan:checkov": "docker run --rm -v $(pwd):/src bridgecrew/checkov -d /src --output json",
+    "scan:gitleaks": "docker run --rm -v $(pwd):/src zricethezav/gitleaks detect --source /src --format json",
+    "scan:trivy": "docker run --rm -v $(pwd):/src aquasec/trivy fs --format json /src",
+    "scan:all": "npm run scan:semgrep && npm run scan:checkov && npm run scan:gitleaks && npm run scan:trivy"
   },
   "keywords": [],
   "author": "",
