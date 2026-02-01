@@ -12,25 +12,12 @@ module.exports = async function checkSEC5(projectId, projectData, gitlab) {
 
   const results = [];
 
-  try {
-    // ============ ПРОВЕРКИ PBAC ============
-    
-    // проверка shared runners и их использования
+  try {    
     checkSharedRunnersSecurity(results, projectRunners, gitlabCIRaw);
-    
-    // разделение секретов dev/prod и их ротация
     checkSecretsSeparation(results, projectVariables, gitlabCIRaw);
-    
-    // разделение инфраструктуры dev/prod
     checkInfrastructureSeparation(results, projectRunners, gitlabCIRaw, projectEnvironments);
-    
-    // доступ только к необходимым ресурсам (сетевая сегментация)
     checkNetworkSegmentation(results, gitlabCIRaw);
-    
-    // проверка лимитов ресурсов
     checkResourceLimits(results, gitlabCIRaw);
-    
-    // анализ пайплайнов на подозрительную активность
     await checkPipelineActivity(results, pipelines, projectId, gitlab);
     
   } catch (error) {
@@ -39,7 +26,6 @@ module.exports = async function checkSEC5(projectId, projectData, gitlab) {
       item: "Проверка контроля доступа конвейера (PBAC)",
       status: "FAIL",
       details: `Ошибка при выполнении проверки: ${error.message}`,
-      severity: "info"
     });
   }
 
@@ -50,8 +36,6 @@ module.exports = async function checkSEC5(projectId, projectData, gitlab) {
   };
 };
 
-// ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ============
-
 /**
  * проверка shared runners и их безопасности
  */
@@ -61,7 +45,6 @@ function checkSharedRunnersSecurity(results, projectRunners, gitlabCIRaw) {
       item: "Настройки раннеров",
       status: "INFO",
       details: "Раннеры не обнаружены.",
-      severity: "info"
     });
     return;
   }
@@ -85,7 +68,6 @@ function checkSharedRunnersSecurity(results, projectRunners, gitlabCIRaw) {
         item: "Привилегированные shared runners",
         status: "FAIL",
         details: `Обнаружены ${privilegedRunners.length} shared runners с привилегированными тегами (privileged, docker, root). Это позволяет контейнерам получать root-доступ к хосту.`,
-        severity: "critical"
       });
     }
     
@@ -99,7 +81,6 @@ function checkSharedRunnersSecurity(results, projectRunners, gitlabCIRaw) {
         item: "Shared runners без тегов",
         status: "WARN",
         details: `Обнаружено ${untaggedSharedRunners.length} shared runners без тегов. Это может привести к неконтролируемому выполнению jobs.`,
-        severity: "medium"
       });
     }
   }
@@ -109,7 +90,6 @@ function checkSharedRunnersSecurity(results, projectRunners, gitlabCIRaw) {
     item: "Общая статистика раннеров",
     status: "INFO",
     details: `Всего раннеров: ${projectRunners.length} (shared: ${sharedRunners.length}, project-specific: ${projectSpecificRunners.length})`,
-    severity: "info"
   });
 }
 
@@ -133,7 +113,6 @@ function checkSecretsSeparation(results, projectVariables, gitlabCIRaw) {
       item: "Разделение секретов",
       status: "INFO",
       details: "Секретные переменные не обнаружены.",
-      severity: "info"
     });
     return;
   }
@@ -157,14 +136,12 @@ function checkSecretsSeparation(results, projectVariables, gitlabCIRaw) {
       item: "Разделение секретов dev/prod",
       status: "OK",
       details: `Секреты разделены: dev (${devSecrets.length}), prod (${prodSecrets.length}).`,
-      severity: "critical"
     });
   } else if (globalSecrets.length > 0) {
     results.push({
       item: "Разделение секретов dev/prod",
-      status: "DANGER",
+      status: "WARN",
       details: `${globalSecrets.length} секретов доступны во всех окружениях. Разделите секреты dev и prod.`,
-      severity: "critical"
     });
   }
   
@@ -183,7 +160,6 @@ function checkSecretsSeparation(results, projectVariables, gitlabCIRaw) {
       item: "Ротация секретов",
       status: "WARN",
       details: `${oldSecrets.length} секретов созданы более 90 дней назад. Рекомендуется регулярная ротация.`,
-      severity: "medium"
     });
   }
 }
@@ -210,14 +186,12 @@ function checkInfrastructureSeparation(results, projectRunners, gitlabCIRaw, pro
       item: "Разделение окружений dev/prod",
       status: "OK",
       details: `Обнаружены отдельные окружения: dev (${devEnvironments.length}), prod (${prodEnvironments.length}).`,
-      severity: "medium"
     });
   } else if (prodEnvironments.length > 0) {
     results.push({
       item: "Разделение окружений dev/prod",
       status: "WARN",
       details: `Обнаружены только prod окружения (${prodEnvironments.length} шт.). Добавьте dev окружения для разделения.`,
-      severity: "medium"
     });
   }
 }
@@ -254,16 +228,14 @@ function checkDeveloperAccessLimitations(results, branches, protectedBranches, p
   if (unprotectedProdBranches.length > 0) {
     results.push({
       item: "Доступ разработчиков к production",
-      status: "DANGER",
+      status: "WARN",
       details: `Разработчики могут влиять на production ветки: ${unprotectedProdBranches.join(', ')}.`,
-      severity: "critical"
     });
   } else if (developers.length > 0) {
     results.push({
       item: "Доступ разработчиков к production",
       status: "OK",
       details: `Доступ ${developers.length} разработчиков к production веткам ограничен.`,
-      severity: "critical"
     });
   }
 }
@@ -294,19 +266,15 @@ function checkCleanStateAfterBuild(results, gitlabCIRaw) {
       item: "Сброс в чистое состояние после сборки",
       status: "OK",
       details: "Обнаружены шаги очистки после сборки.",
-      severity: "low"
     });
   } else {
     results.push({
       item: "Сброс в чистое состояние после сборки",
       status: "WARN",
       details: "Не обнаружены явные шаги очистки. Рекомендуется очищать временные файлы и кеши.",
-      severity: "low"
     });
   }
 }
-
-
 
 /**
  * 
@@ -342,7 +310,6 @@ function checkNetworkSegmentation(results, gitlabCIRaw) {
       item: "Сетевая сегментация и доступ к ресурсам",
       status: "WARN",
       details: `Обнаружен доступ к внешним ресурсам (${foundPatterns.length} шт.). Ограничьте сетевой доступ.`,
-      severity: "medium"
     });
   }
 }
@@ -371,7 +338,6 @@ function checkResourceLimits(results, gitlabCIRaw) {
       item: "Лимиты ресурсов",
       status: "WARN",
       details: "Не обнаружены лимиты ресурсов. Рекомендуется установить limits на CPU и memory.",
-      severity: "low"
     });
   }
 }
@@ -393,7 +359,6 @@ async function checkPipelineActivity(results, pipelines, projectId, gitlab) {
       item: "Стабильность сборок",
       status: "WARN",
       details: `Низкая стабильность сборок: ${successRate.toFixed(1)}% успешных. Частые сбои могут маскировать атаки.`,
-      severity: "medium"
     });
   }
 }

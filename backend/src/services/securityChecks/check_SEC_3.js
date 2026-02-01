@@ -47,7 +47,6 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
             details: foundFiles.length > 0
                 ? `Обнаружены файлы зависимостей: ${foundFiles.join(', ')}`
                 : "Файлы зависимостей не обнаружены. Если проект использует зависимости, убедитесь, что они задокументированы.",
-            severity: "info"
         });
 
         // проверяем наличие lock-файлов
@@ -60,14 +59,12 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
             details: hasLockFiles
                 ? "Обнаружены lock-файлы, что помогает предотвратить dependency confusion атаки (lock-файлы для фиксируют версии зависимостей)."
                 : "Lock-файлы не обнаружены. Рекомендуется использовать lock-файлы для фиксации версий зависимостей.",
-            severity: "info"
         });
 
         // анализируем package.json если он есть
         if (dependencyFiles['package.json'].found) {
             try {
                 const packageJson = await gitlab.getRawFile(projectId, 'package.json');
-                // console.log('packageJson', packageJson)
 
                 // проверка на использование публичных реестров
                 const registries = [];
@@ -84,7 +81,7 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
                             }
                         }
                     } catch (e) {
-                        // .npmrc не найден или ошибка чтения
+                        console.error('checkSEC3 error')
                     }
                 }
 
@@ -112,20 +109,16 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
                     item: "Анализ зависимостей npm",
                     status: "OK",
                     details: `Всего зависимостей: ${Object.keys(allDeps).length}, с точными версиями: ${exactVersionDeps.length}`,
-                    severity: "critical"
                 });
 
-                // проверка на использование git-зависимостей (более безопасно)
                 if (gitDeps.length > 0) {
                     results.push({
                         item: "Git-зависимости",
                         status: "OK",
                         details: `Используются git-зависимости (${gitDeps.length}), что снижает риск dependency confusion.`,
-                        severity: "low"
                     });
                 }
 
-                // проверка на использование wildcard версий
                 const wildcardVersions = depsWithVersions.filter(dep =>
                     dep.version === '*' ||
                     dep.version === 'latest' ||
@@ -136,9 +129,8 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
                 if (wildcardVersions.length > 0) {
                     results.push({
                         item: "Wildcard версии зависимостей",
-                        status: "DANGER",
+                        status: "WARN",
                         details: `Обнаружены зависимости с wildcard версиями: ${wildcardVersions.map(d => d.name).join(', ')}. Это опасно для dependency confusion атак.`,
-                        severity: "high"
                     });
                 }
 
@@ -147,7 +139,6 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
                     item: "Анализ package.json",
                     status: "WARN",
                     details: `Не удалось проанализировать package.json: ${error.message}`,
-                    severity: "low"
                 });
             }
         }
@@ -183,7 +174,6 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
             details: hasInternalRegistry
                 ? "Обнаружено использование внутреннего реестра пакетов, что снижает риск dependency confusion."
                 : "Не обнаружено использование внутреннего реестра пакетов. Рекомендуется настроить proxy-реестр.",
-            severity: "medium"
         });
 
         // проверка Dockerfile на сканирование образов
@@ -196,13 +186,14 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
                 item: "Docker образы",
                 status: "WARN",
                 details: `Обнаружено ${dockerFiles.length} Dockerfile. Рекомендуется добавить сканирование образов на уязвимости в CI/CD.`,
-                severity: "low"
             });
         }
 
-        // пРОВЕРКА SAST
         const sastCheck = await checkSASTWithDetails(projectId, gitlabCIRaw, pipelines, gitlab);
-        results.push(sastCheck);
+        results.push(...sastCheck);
+
+        const scaCheck = await checkDependencyScanningWithDetails(projectId, gitlabCIRaw, pipelines, gitlab);
+        results.push(...scaCheck);
 
     } catch (error) {
         console.error(`Error in SEC-3 check for project ${projectId}:`, error);
@@ -210,7 +201,6 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
             item: "Проверка цепочки зависимостей",
             status: "FAIL",
             details: `Ошибка при выполнении проверки: ${error.message}`,
-            severity: "info"
         });
     }
 
@@ -221,11 +211,8 @@ module.exports = async function checkSEC3(projectId, projectData, gitlab) {
     };
 };
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ========== \\
-// расширенная проверка SAST с деталями из отчета
 async function checkSASTWithDetails(projectId, gitlabCIRaw, pipelines, gitlab) {
     try {
-        // проверяем наличие SAST в конфигурации CI/CD
         const hasSASTInConfig = gitlabCIRaw && (
             gitlabCIRaw.includes('Security/SAST.gitlab-ci.yml') ||
             gitlabCIRaw.includes("template: 'Security/SAST") ||
@@ -234,25 +221,13 @@ async function checkSASTWithDetails(projectId, gitlabCIRaw, pipelines, gitlab) {
         );
 
         if (!hasSASTInConfig) {
-            return {
-                item: "SAST (Static Application Security Testing)",
-                status: "WARN",
-                details: "SAST не настроен в CI/CD конфигурации. Рекомендуется добавить статический анализ безопасности.",
-                severity: "medium"
-            };
+            return [];
         }
 
-        // ищем последний выполненный SAST job
         if (!pipelines || pipelines.length === 0) {
-            return {
-                item: "SAST (Static Application Security Testing)",
-                status: "WARN",
-                details: "SAST настроен, но пайплайны не найдены.",
-                severity: "low"
-            };
+            return [];
         }
 
-        // сортируем пайплайны по дате (новые сначала)
         const sortedPipelines = [...pipelines].sort((a, b) => 
             new Date(b.created_at) - new Date(a.created_at)
         );
@@ -262,27 +237,25 @@ async function checkSASTWithDetails(projectId, gitlabCIRaw, pipelines, gitlab) {
         let sastReport = null;
         let sastFindings = null;
 
-        // ищем последний пайплайн с SAST job (проверяем последние 5)
         for (const pipeline of sortedPipelines.slice(0, 5)) {
             try {
                 const jobs = await gitlab.getPipelineJobs(projectId, pipeline.id);
                 const sastJob = jobs.find(job => 
                     job.name === 'sast' || 
                     job.name.includes('sast') ||
-                    (job.stage && job.stage.toLowerCase().includes('test') && job.name.toLowerCase().includes('security'))
+                    (job.stage && job.stage.toLowerCase().includes('test') && 
+                     job.name.toLowerCase().includes('security'))
                 );
 
                 if (sastJob && (sastJob.status === 'success' || sastJob.status === 'failed')) {
                     lastSastJob = sastJob;
                     lastSastPipeline = pipeline;
                     
-                    // пытаемся получить отчет SAST из артефактов
                     try {
                         sastReport = await gitlab.getJobArtifactFile(projectId, sastJob.id, "gl-sast-report.json");
                         sastFindings = parseSASTReport(sastReport);
                     } catch (artifactError) {
                         console.log(`Could not fetch SAST artifacts for job ${sastJob.id}:`, artifactError.message);
-                        // пробуем альтернативные пути к отчету
                         const alternativePaths = [
                             "gl-sast-report",
                             "sast-report.json",
@@ -308,136 +281,70 @@ async function checkSASTWithDetails(projectId, gitlabCIRaw, pipelines, gitlab) {
         }
 
         if (!lastSastJob) {
-            return {
+            return [{
                 item: "SAST (Static Application Security Testing)",
-                status: "WARN",
-                details: "SAST настроен, но не выполняется в пайплайнах. Проверьте условия запуска (only/except/rules).",
-                severity: "medium"
-            };
+                status: "INFO",
+                details: "Отчёт не найден",
+            }];
         }
 
-        // формируем детализированный результат
-        const runDate = new Date(lastSastPipeline.created_at).toLocaleDateString('ru-RU', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        if (!sastFindings || !sastFindings.vulnerabilities || sastFindings.vulnerabilities.length === 0) {
+            return [{
+                item: "SAST (Static Application Security Testing)",
+                status: "INFO",
+                details: "Отчёт не найден",
+            }];
+        }
+
+        const vulnerabilities = sastFindings.vulnerabilities.map(vuln => {
+            let status;
+            const severity = vuln.severity?.toLowerCase() || 'unknown';
+            
+            if (severity === 'critical') {
+                status = 'DANGER';
+            } else if (['high', 'medium', 'low'].includes(severity)) {
+                status = 'WARN';
+            } else {
+                status = 'INFO';
+            }
+
+            const details = `${vuln.description || vuln.name}\n` +
+                          `Файл: ${vuln.location?.file || 'Не указан'}\n` +
+                          `Строка: ${vuln.location?.start_line || 'Не указана'}\n` +
+                          `CVE: ${vuln.cve || 'Не указан'}\n` +
+                          `Категория: ${vuln.category || 'Не указана'}`;
+
+            return {
+                item: vuln.name || "Неизвестная уязвимость",
+                status: status,
+                details: details,
+                severity: severity,
+                metadata: {
+                    id: vuln.id,
+                    scanner: vuln.scanner?.name || 'Unknown',
+                    location: vuln.location,
+                    identifiers: vuln.identifiers,
+                    jobId: lastSastJob.id,
+                    pipelineId: lastSastPipeline.id,
+                    runDate: lastSastPipeline.created_at
+                }
+            };
         });
 
-        let details = '';
-        let status = 'INFO';
-        let severity = 'high';
-
-        if (lastSastJob.status === 'success') {
-            if (sastFindings && sastFindings.total !== undefined) {
-                // если есть отчет с найденными уязвимостями
-                const { total, bySeverity } = sastFindings;
-                
-                if (total === 0) {
-                    status = 'OK';
-                    details = ` SAST выполнен успешно. Найдено уязвимостей: 0`;
-                } else {
-                    status = 'DANGER';
-                    
-                    details = ` SAST нашел уязвимости: ${total}`;
-                    const severityParts = [];
-                    if (bySeverity.critical > 0) severityParts.push(`Critical: ${bySeverity.critical}`);
-                    if (bySeverity.high > 0) severityParts.push(`High: ${bySeverity.high}`);
-                    if (bySeverity.medium > 0) severityParts.push(`Medium: ${bySeverity.medium}`);
-                    if (bySeverity.low > 0) severityParts.push(`Low: ${bySeverity.low}`);
-                    
-                    if (severityParts.length > 0) {
-                        details += ` (${severityParts.join(', ')})`;
-                    }
-                }
-            } else {
-                // если отчета нет, но job успешен
-                status = 'OK';
-                details = ` SAST выполнен успешно (отчет не доступен)`;
-                severity = 'high';
-            }
-        } else if (lastSastJob.status === 'failed') {
-            status = 'FAIL';
-            
-            if (sastFindings && sastFindings.total > 0) {
-                const { total, bySeverity } = sastFindings;
-                details = ` SAST завершился с ошибкой: ${total}`;
-                const severityParts = [];
-                if (bySeverity.critical > 0) severityParts.push(`Critical: ${bySeverity.critical}`);
-                if (bySeverity.high > 0) severityParts.push(`High: ${bySeverity.high}`);
-                
-                if (severityParts.length > 0) {
-                    details += ` (${severityParts.join(', ')})`;
-                }
-                
-                // определяем уровень серьезности
-                if (bySeverity.critical > 0) severity = 'high';
-                else if (bySeverity.high > 0) severity = 'high';
-                else severity = 'high';
-            } else {
-                details = ` SAST завершился с ошибкой`;
-                severity = 'high';
-            }
-        } else {
-            status = 'WARN';
-            details = ` SAST выполняется или отменен. Статус: ${lastSastJob.status}`;
-            severity = 'high';
-        }
-
-        // добавляем метаинформацию
-        details += `\n Последний запуск: ${runDate}`;
-        details += `\n Job ID: ${lastSastJob.id}`;
-        details += `\n Pipeline ID: ${lastSastPipeline.id}`;
-        
-        if (sastFindings && sastFindings.total !== undefined && sastFindings.total > 0) {
-            details += `\n Уязвимости: ${sastFindings.total}`;
-            if (sastFindings.bySeverity) {
-                details += ` (C:${sastFindings.bySeverity.critical || 0}, H:${sastFindings.bySeverity.high || 0}, M:${sastFindings.bySeverity.medium || 0}, L:${sastFindings.bySeverity.low || 0})`;
-            }
-            
-            // добавляем примеры уязвимостей если есть
-            if (sastFindings.sampleVulnerabilities && sastFindings.sampleVulnerabilities.length > 0) {
-                details += `\n\nПримеры:`;
-                sastFindings.sampleVulnerabilities.forEach((vuln, index) => {
-                    details += `\n${index + 1}. ${vuln.severity.toUpperCase()}: ${vuln.name} (${vuln.location})`;
-                });
-            }
-        }
-
-        return {
-            item: "SAST (Static Application Security Testing)",
-            status: status,
-            details: details,
-            severity: severity,
-            metadata: {
-                jobId: lastSastJob.id,
-                pipelineId: lastSastPipeline.id,
-                runDate: lastSastPipeline.created_at,
-                findings: sastFindings,
-                jobStatus: lastSastJob.status
-            }
-        };
+        return vulnerabilities;
 
     } catch (error) {
         console.error(`Error in SAST check for project ${projectId}:`, error);
-        return {
-            item: "SAST (Static Application Security Testing)",
-            status: "WARN",
-            details: `Ошибка при проверке SAST: ${error.message}`,
-            severity: "high"
-        };
+        return [];
     }
 }
 
-// парсинг отчета SAST (GitLab формат)
 function parseSASTReport(reportData) {
     try {
         if (!reportData) {
             return null;
         }
 
-        // если reportData - строка, пробуем парсить как JSON
         let data;
         if (typeof reportData === 'string') {
             try {
@@ -450,18 +357,201 @@ function parseSASTReport(reportData) {
             data = reportData;
         }
 
-        // gitlab sast отчет имеет такую структуру:
-        // {
-        //   "version": "15.0.0",
-        //   "vulnerabilities": [...],
-        //   "remediations": [...]
-        // }
-        
         const vulnerabilities = data.vulnerabilities || [];
-        const total = vulnerabilities.length;
         
-        // группируем по severity
-        const bySeverity = {
+        return {
+            vulnerabilities: vulnerabilities,
+            total: vulnerabilities.length,
+            scanDate: data.scan?.end_time || data.scan?.start_time || new Date().toISOString(),
+            scanner: data.scan?.scanner?.name || 'Unknown'
+        };
+    } catch (error) {
+        console.error('Error parsing SAST report:', error);
+        return null;
+    }
+}
+
+async function checkDependencyScanningWithDetails(projectId, gitlabCIRaw, pipelines, gitlab) {
+    try {
+        const hasDependencyScanningInConfig = gitlabCIRaw && (
+            gitlabCIRaw.includes('Security/Dependency-Scanning.gitlab-ci.yml') ||
+            gitlabCIRaw.includes("template: 'Security/Dependency-Scanning") ||
+            gitlabCIRaw.includes('dependency_scanning:') ||
+            gitlabCIRaw.includes('dependency-scanning:')
+        );
+
+        if (!hasDependencyScanningInConfig) {
+            return [];
+        }
+
+        if (!pipelines || pipelines.length === 0) {
+            return [];
+        }
+
+        const sortedPipelines = [...pipelines].sort((a, b) => 
+            new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        let lastDependencyScanningJob = null;
+        let lastDependencyScanningPipeline = null;
+        let dependencyScanningReport = null;
+        let dependencyScanningFindings = null;
+
+        for (const pipeline of sortedPipelines.slice(0, 5)) {
+            try {
+                const jobs = await gitlab.getPipelineJobs(projectId, pipeline.id);
+                const dependencyScanningJob = jobs.find(job => 
+                    job.name === 'dependency_scanning' || 
+                    job.name.includes('dependency_scanning') ||
+                    job.name.includes('dependency-scanning') ||
+                    (job.stage && job.stage.toLowerCase().includes('test') && 
+                     job.name.toLowerCase().includes('dependency'))
+                );
+
+                if (dependencyScanningJob && (dependencyScanningJob.status === 'success' || 
+                                              dependencyScanningJob.status === 'failed')) {
+                    lastDependencyScanningJob = dependencyScanningJob;
+                    lastDependencyScanningPipeline = pipeline;
+                    
+                    try {
+                        dependencyScanningReport = await gitlab.getJobArtifactFile(
+                            projectId, 
+                            dependencyScanningJob.id, 
+                            "gl-dependency-scanning-report.json"
+                        );
+                        dependencyScanningFindings = parseDependencyScanningReport(dependencyScanningReport);
+                    } catch (artifactError) {
+                        console.log(`Could not fetch Dependency Scanning artifacts for job ${dependencyScanningJob.id}:`, 
+                                  artifactError.message);
+                        const alternativePaths = [
+                            "gl-dependency-scanning-report",
+                            "dependency-scanning-report.json",
+                            "dependency_scanning_report.json"
+                        ];
+                        
+                        for (const path of alternativePaths) {
+                            try {
+                                dependencyScanningReport = await gitlab.getJobArtifactFile(
+                                    projectId, 
+                                    dependencyScanningJob.id, 
+                                    path
+                                );
+                                dependencyScanningFindings = parseDependencyScanningReport(dependencyScanningReport);
+                                if (dependencyScanningFindings) break;
+                            } catch (e) {
+                                continue;
+                            }
+                        }
+                    }
+                    break;
+                }
+            } catch (err) {
+                console.error(`Error checking Dependency Scanning job in pipeline ${pipeline.id}:`, err.message);
+                continue;
+            }
+        }
+
+        if (!lastDependencyScanningJob) {
+            return [{
+                item: "SCA (Dependency Scanning)",
+                status: "INFO",
+                details: "Отчёт не найден",
+            }];
+        }
+
+        if (!dependencyScanningFindings || !dependencyScanningFindings.vulnerabilities || 
+            dependencyScanningFindings.vulnerabilities.length === 0) {
+            return [{
+                item: "SCA (Dependency Scanning)",
+                status: "INFO",
+                details: "Отчёт не найден",
+            }];
+        }
+
+        const vulnerabilities = dependencyScanningFindings.vulnerabilities.map(vuln => {
+            let status;
+            const severity = vuln.severity?.toLowerCase() || 'unknown';
+            
+            if (severity === 'critical') {
+                status = 'DANGER';
+            } else if (['high', 'medium', 'low'].includes(severity)) {
+                status = 'WARN';
+            } else {
+                status = 'INFO';
+            }
+
+            const dependencyName = vuln.location?.dependency?.package?.name || 
+                                  vuln.location?.dependency?.name || 
+                                  vuln.component || 
+                                  'Не указана';
+            
+            const dependencyVersion = vuln.location?.dependency?.version || 
+                                     vuln.location?.version || 
+                                     'Не указана';
+            
+            const packageManager = vuln.location?.dependency?.package_manager || 
+                                  vuln.location?.package_manager || 
+                                  'Не указан';
+
+            const details = `${vuln.description || vuln.name}\n` +
+                          `Зависимость: ${dependencyName}\n` +
+                          `Версия: ${dependencyVersion}\n` +
+                          `Пакетный менеджер: ${packageManager}\n` +
+                          `CVE: ${vuln.cve || 'Не указан'}\n` +
+                          `Исправленная версия: ${vuln.fixed_version || 'Не указана'}`;
+
+            return {
+                item: "Dependency Scanning",
+                status: status,
+                details: details,
+                severity: severity,
+                metadata: {
+                    id: vuln.id,
+                    scanner: vuln.scanner?.name || 'GitLab Dependency Scanning',
+                    location: vuln.location,
+                    cve: vuln.cve,
+                    component: dependencyName,
+                    version: dependencyVersion,
+                    package_manager: packageManager,
+                    fixed_version: vuln.fixed_version,
+                    cvss_score: vuln.cvss_score,
+                    identifiers: vuln.identifiers,
+                    jobId: lastDependencyScanningJob.id,
+                    pipelineId: lastDependencyScanningPipeline.id,
+                    runDate: lastDependencyScanningPipeline.created_at
+                }
+            };
+        });
+
+        return vulnerabilities;
+
+    } catch (error) {
+        console.error(`Error in Dependency Scanning check for project ${projectId}:`, error);
+        return [];
+    }
+}
+
+function parseDependencyScanningReport(reportData) {
+    try {
+        if (!reportData) {
+            return null;
+        }
+
+        let data;
+        if (typeof reportData === 'string') {
+            try {
+                data = JSON.parse(reportData);
+            } catch (e) {
+                console.error('Dependency Scanning report is not valid JSON:', e.message);
+                return null;
+            }
+        } else {
+            data = reportData;
+        }
+
+        const vulnerabilities = data.vulnerabilities || [];
+        
+        const severityStats = {
             critical: 0,
             high: 0,
             medium: 0,
@@ -469,37 +559,25 @@ function parseSASTReport(reportData) {
             info: 0,
             unknown: 0
         };
-
+        
         vulnerabilities.forEach(vuln => {
             const severity = (vuln.severity || 'unknown').toLowerCase();
-            if (bySeverity.hasOwnProperty(severity)) {
-                bySeverity[severity]++;
+            if (severityStats.hasOwnProperty(severity)) {
+                severityStats[severity]++;
             } else {
-                bySeverity.unknown++;
+                severityStats.unknown++;
             }
         });
 
-        // извлекаем примеры уязвимостей (первые 3)
-        const sampleVulnerabilities = vulnerabilities.slice(0, 3).map(vuln => ({
-            name: vuln.name || vuln.message || 'Unknown vulnerability',
-            severity: vuln.severity || 'unknown',
-            location: vuln.location ? 
-                (vuln.location.file ? `${vuln.location.file}:${vuln.location.start_line || 'N/A'}` : 'N/A') : 
-                'N/A',
-            description: vuln.description || vuln.message || 'No description'
-        }));
-
         return {
-            total,
-            bySeverity,
-            sampleVulnerabilities,
-            scanDate: data.scan ? (data.scan.end_time || data.scan.start_time || new Date().toISOString()) : new Date().toISOString(),
-            scanner: data.scan ? (data.scan.scanner ? data.scan.scanner.name : 'GitLab SAST') : 'GitLab SAST',
-            reportVersion: data.version || 'unknown'
+            vulnerabilities: vulnerabilities,
+            total: vulnerabilities.length,
+            severityStats: severityStats,
+            scanDate: data.scan?.end_time || data.scan?.start_time || new Date().toISOString(),
+            scanner: data.scan?.scanner?.name || (data.scan?.analyzer?.name || 'GitLab Dependency Scanning')
         };
-
     } catch (error) {
-        console.error('Error parsing SAST report:', error);
+        console.error('Error parsing Dependency Scanning report:', error);
         return null;
     }
 }

@@ -31,7 +31,6 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
       details: hasCiConfigs
         ? `Обнаружены файлы CI/CD: ${ciConfigs.map(f => f.name).join(', ')}`
         : "Файлы CI/CD не обнаружены. Проверка PPE не применима.",
-      severity: "info"
     });
     
     if (!hasCiConfigs) {
@@ -42,18 +41,18 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
       };
     }
 
-    // === ОСНОВНЫЕ ПРОВЕРКИ PPE ===
+    const iacVulnerabilities = await checkIacScanningWithDetails(
+      projectId, 
+      gitlabCIRaw, 
+      pipelines, 
+      gitlab
+    );
 
-    // A. ПРЯМОЙ PPE (D-PPE) - защита от изменения файлов конфигурации
+    results.push(...iacVulnerabilities);
+
     checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoTree, ciConfigs);
-
-    // B. КОСВЕННЫЙ PPE (I-PPE) - защита от изменения зависимых файлов
     checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitlab);
-
-    // C. ПУБЛИЧНЫЙ PPE (3PE) - защита публичных проектов
     checkPublicPPE(results, projectDetails, gitlabCIRaw);
-
-    // D. СПОСОБЫ ЗАЩИТЫ
     checkProtectionMeasures(results, {
       projectRunners,
       projectEnvironments,
@@ -69,7 +68,6 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
       item: "Проверка Poisoned Pipeline Execution (PPE)",
       status: "FAIL",
       details: `Ошибка при выполнении проверки: ${error.message}`,
-      severity: "info"
     });
   }
 
@@ -80,11 +78,6 @@ module.exports = async function checkSEC4(projectId, project, gitlab) {
   };
 };
 
-// ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ============ \
-
-/**
- * проверка Direct PPE - защита от изменения файлов конфигурации
- */
 function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoTree, ciConfigs) {
   // защита веток с CI файлами
   const mainBranches = branches.filter(b => 
@@ -101,9 +94,8 @@ function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoT
   if (unprotectedMainBranches.length > 0) {
     results.push({
       item: "[D-PPE] Защита основных веток с CI файлами",
-      status: "DANGER",
+      status: "WARN",
       details: `Основные ветки не защищены от прямого изменения: ${unprotectedMainBranches.map(b => b.name).join(', ')}. Разработчики могут напрямую изменять CI конфигурации.`,
-      severity: "critical"
     });
   }
 
@@ -122,7 +114,6 @@ function checkDirectPPE(results, branches, protectedBranches, gitlabCIRaw, repoT
         item: "[D-PPE] Внешние include в CI/CD",
         status: "WARN",
         details: `Обнаружены include из внешних источников (${externalIncludes.length} шт.). Это вектор для D-PPE атак.`,
-        severity: "high"
       });
     }
   }
@@ -175,22 +166,6 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
       foundScripts.push(script);
     }
   }
-  
-  if (foundScripts.length > 0) {
-    results.push({
-      item: "[I-PPE] Исполняемые скрипты, на которые ссылается CI",
-      status: "DANGER",
-      details: `CI ссылается на ${foundScripts.length} скриптов: ${foundScripts.slice(0, 5).join(', ')}${foundScripts.length > 5 ? '...' : ''}. Их изменение может привести к I-PPE.`,
-      severity: "critical"
-    });
-  } else {
-    results.push({
-      item: "[I-PPE] Исполняемые скрипты, на которые ссылается CI",
-      status: "OK",
-      details: `CI конфигурация не ссылается на сторонние скрипты.`,
-      severity: "critical"
-    });
-  }
 
   // Проверка на динамическое исполнение кода
   const dangerousPatterns = [
@@ -219,7 +194,6 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
       item: "[I-PPE] Динамическое исполнение кода",
       status: "FAIL",
       details: `Обнаружены опасные паттерны I-PPE:\n${foundPatterns.map(p => `Строка ${p.line}: ${p.pattern}`).slice(0, 3).join('\n')}`,
-      severity: "critical"
     });
   }
 
@@ -235,7 +209,6 @@ async function checkIndirectPPE(results, gitlabCIRaw, repoTree, projectId, gitla
       item: "[I-PPE] Небезопасные команды загрузки",
       status: "WARN",
       details: `Обнаружены потенциально опасные команды загрузки: ${unsafeCommands.length} шт.`,
-      severity: "high"
     });
   }
 }
@@ -251,9 +224,8 @@ function checkPublicPPE(results, projectDetails, gitlabCIRaw) {
   if (isPublicProject) {
     results.push({
       item: "[3PE] Публичный проект",
-      status: "DANGER",
+      status: "WARN",
       details: "Проект является публичным. Повышен риск Public PPE атак через fork и PR.",
-      severity: "critical"
     });
     
     // Проверка настройки pipeline для PR
@@ -269,7 +241,6 @@ function checkPublicPPE(results, projectDetails, gitlabCIRaw) {
           item: "[3PE] Pipeline для Pull Requests",
           status: "INFO",
           details: "Настроен pipeline для выполнения при создании PR. Убедитесь в строгих проверках для PR.",
-          severity: "medium"
         });
       }
     }
@@ -277,7 +248,6 @@ function checkPublicPPE(results, projectDetails, gitlabCIRaw) {
 }
 
 // проверка способов защиты от PPE
-
 function checkProtectionMeasures(results, data) {
   const { 
     projectRunners = [], 
@@ -308,7 +278,6 @@ function checkProtectionMeasures(results, data) {
       item: "Защита: Разделение секретов",
       status: "INFO",
       details: `${globalSecrets.length} секретов доступны во всех окружениях. Рекомендуется использовать environment-scoped переменные.`,
-      severity: "medium"
     });
   }
   
@@ -333,7 +302,6 @@ function checkProtectionMeasures(results, data) {
       item: "Защита: Разделение окружений",
       status: "INFO",
       details: `Обнаружены отдельные окружения: prod (${prodEnvironments.length}), dev (${devEnvironments.length}).`,
-      severity: "info"
     });
   }
   
@@ -347,7 +315,6 @@ function checkProtectionMeasures(results, data) {
       item: "Защита: Привилегированные раннеры",
       status: "WARN",
       details: `Обнаружены ${privilegedRunners.length} привилегированных раннеров. Они могут быть мишенью для PPE атак.`,
-      severity: "medium"
     });
   }
   
@@ -360,10 +327,9 @@ function checkProtectionMeasures(results, data) {
     
     if (successRate < 80 && recentPipelines.length >= 3) {
       results.push({
-        item: "Защита: Стабильность сборок",
-        status: "WARN",
+        item: "Стабильность сборок",
+        status: "INFO",
         details: `Низкая стабильность сборок: ${successRate.toFixed(1)}% успешных. Частые сбои могут маскировать PPE атаки.`,
-        severity: "medium"
       });
     }
   }
@@ -379,11 +345,241 @@ function checkProtectionMeasures(results, data) {
     
     if (latestImages.length > 0) {
       results.push({
-        item: "Защита: Docker образы",
-        status: "WARN",
+        item: "Тэги Docker-образов",
+        status: "INFO",
         details: `Обнаружены образы с тегом latest или без тега (${latestImages.length} шт.). Используйте фиксированные версии.`,
-        severity: "medium"
       });
     }
   }
+}
+
+async function checkIacScanningWithDetails(projectId, gitlabCIRaw, pipelines, gitlab) {
+    try {
+        const hasIacScanningInConfig = gitlabCIRaw && (
+            gitlabCIRaw.includes('Security/SAST-IaC.gitlab-ci.yml') ||
+            gitlabCIRaw.includes('Jobs/SAST-IaC.gitlab-ci.yml') ||
+            gitlabCIRaw.includes('Security/IaC.gitlab-ci.yml') ||
+            gitlabCIRaw.includes("template: 'Security/SAST-IaC") ||
+            gitlabCIRaw.includes('iac_scanning:') ||
+            gitlabCIRaw.includes('iac-scanning:') ||
+            gitlabCIRaw.includes('kics-iac-sast') ||
+            gitlabCIRaw.includes('kics:') ||
+            gitlabCIRaw.includes('tfsec:') ||
+            gitlabCIRaw.includes('checkov:')
+        );
+
+        if (!hasIacScanningInConfig) {
+            return [];
+        }
+
+        if (!pipelines || pipelines.length === 0) {
+            return [];
+        }
+
+        const sortedPipelines = [...pipelines].sort((a, b) => 
+            new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        let lastIacScanningJob = null;
+        let lastIacScanningPipeline = null;
+        let iacScanningReport = null;
+        let iacScanningFindings = null;
+
+        for (const pipeline of sortedPipelines.slice(0, 5)) {
+            try {
+                const jobs = await gitlab.getPipelineJobs(projectId, pipeline.id);
+                const iacScanningJob = jobs.find(job => 
+                    job.name === 'iac_scanning' || 
+                    job.name.includes('iac_scanning') ||
+                    job.name.includes('kics-iac-sast') ||
+                    job.name.includes('kics') ||
+                    job.name.includes('tfsec') ||
+                    job.name.includes('checkov') ||
+                    (job.stage && job.stage.toLowerCase().includes('test') && 
+                     job.name.toLowerCase().includes('iac'))
+                );
+
+                if (iacScanningJob && (iacScanningJob.status === 'success' || 
+                                       iacScanningJob.status === 'failed')) {
+                    lastIacScanningJob = iacScanningJob;
+                    lastIacScanningPipeline = pipeline;
+                    
+                    try {
+                        iacScanningReport = await gitlab.getJobArtifactFile(
+                            projectId, 
+                            iacScanningJob.id, 
+                            "gl-sast-report.json"
+                        );
+                        iacScanningFindings = parseIacScanningReport(iacScanningReport);
+                    } catch (artifactError) {
+                        console.log(`Could not fetch IaC Scanning artifacts for job ${iacScanningJob.id}:`, 
+                                  artifactError.message);
+                        const alternativePaths = [
+                            "gl-sast-iac-report",
+                            "gl-sast-report.json",
+                            "iac-scanning-report.json",
+                            "kics-report.json",
+                            "tfsec-report.json",
+                            "checkov-report.json"
+                        ];
+                        
+                        for (const path of alternativePaths) {
+                            try {
+                                iacScanningReport = await gitlab.getJobArtifactFile(
+                                    projectId, 
+                                    iacScanningJob.id, 
+                                    path
+                                );
+                                iacScanningFindings = parseIacScanningReport(iacScanningReport);
+                                if (iacScanningFindings) break;
+                            } catch (e) {
+                                continue;
+                            }
+                        }
+                    }
+                    break;
+                }
+            } catch (err) {
+                console.error(`Error checking IaC Scanning job in pipeline ${pipeline.id}:`, err.message);
+                continue;
+            }
+        }
+
+        if (!lastIacScanningJob) {
+            return [{
+                item: "IaC Scanning",
+                status: "INFO",
+                details: "Отчёт не найден",
+            }];
+        }
+
+        if (!iacScanningFindings || !iacScanningFindings.vulnerabilities || 
+            iacScanningFindings.vulnerabilities.length === 0) {
+            return [{
+                item: "IaC Scanning",
+                status: "INFO",
+                details: "Отчёт не найден",
+            }];
+        }
+
+        const vulnerabilities = iacScanningFindings.vulnerabilities.map(vuln => {
+            let status;
+            const severity = vuln.severity?.toLowerCase() || 'unknown';
+            
+            if (severity === 'critical') {
+                status = 'DANGER';
+            } else if (['high', 'medium', 'low'].includes(severity)) {
+                status = 'WARN';
+            } else {
+                status = 'INFO';
+            }
+
+            let iacType = 'IaC';
+            const fileName = vuln.location?.file || '';
+            if (fileName.endsWith('.tf')) {
+                iacType = 'Terraform';
+            } else if (fileName.endsWith('.yaml') || fileName.endsWith('.yml')) {
+                iacType = 'Kubernetes/YAML';
+            } else if (fileName.endsWith('.json')) {
+                iacType = 'CloudFormation/JSON';
+            } else if (fileName === 'Dockerfile' || fileName.endsWith('.dockerfile')) {
+                iacType = 'Docker';
+            }
+
+            const kicsId = vuln.identifiers?.find(id => id.type === 'kics_id')?.value || 
+                          vuln.cve?.replace('kics_id:', '').split(':')[0] || 
+                          'Не указан';
+
+            const details = `${vuln.description || vuln.name}\n` +
+                          `Тип инфраструктуры: ${iacType}\n` +
+                          `Файл: ${vuln.location?.file || 'Не указан'}\n` +
+                          `Строка: ${vuln.location?.start_line || 'Не указана'}\n` +
+                          `Правило KICS: ${kicsId}\n` +
+                          `Категория: ${vuln.category || 'sast'}`;
+
+            const documentationUrl = vuln.identifiers?.find(id => id.type === 'kics_id')?.url ||
+                                    vuln.identifiers?.find(id => id.type === 'cwe')?.url ||
+                                    null;
+
+            return {
+                item: "IaC Scanning",
+                status: status,
+                details: details,
+                severity: severity,
+                metadata: {
+                    id: vuln.id,
+                    scanner: vuln.scanner?.name || 'KICS',
+                    location: vuln.location,
+                    iac_type: iacType,
+                    kics_id: kicsId,
+                    cve: vuln.cve,
+                    category: vuln.category,
+                    identifiers: vuln.identifiers,
+                    documentation_url: documentationUrl,
+                    jobId: lastIacScanningJob.id,
+                    pipelineId: lastIacScanningPipeline.id,
+                    runDate: lastIacScanningPipeline.created_at
+                }
+            };
+        });
+
+        return vulnerabilities;
+
+    } catch (error) {
+        console.error(`Error in IaC Scanning check for project ${projectId}:`, error);
+        return [];
+    }
+}
+
+function parseIacScanningReport(reportData) {
+    try {
+        if (!reportData) {
+            return null;
+        }
+
+        let data;
+        if (typeof reportData === 'string') {
+            try {
+                data = JSON.parse(reportData);
+            } catch (e) {
+                console.error('IaC Scanning report is not valid JSON:', e.message);
+                return null;
+            }
+        } else {
+            data = reportData;
+        }
+
+        const vulnerabilities = data.vulnerabilities || [];
+        
+        const severityStats = {
+            critical: 0,
+            high: 0,
+            medium: 0,
+            low: 0,
+            info: 0,
+            unknown: 0
+        };
+        
+        vulnerabilities.forEach(vuln => {
+            const severity = (vuln.severity || 'unknown').toLowerCase();
+            if (severityStats.hasOwnProperty(severity)) {
+                severityStats[severity]++;
+            } else {
+                severityStats.unknown++;
+            }
+        });
+
+        return {
+            vulnerabilities: vulnerabilities,
+            total: vulnerabilities.length,
+            severityStats: severityStats,
+            scanDate: data.scan?.end_time || data.scan?.start_time || new Date().toISOString(),
+            scanner: data.scan?.scanner?.name || (data.scan?.analyzer?.name || 'KICS'),
+            scannerVersion: data.scan?.scanner?.version || data.scan?.analyzer?.version,
+            scanType: data.scan?.type || 'sast'
+        };
+    } catch (error) {
+        console.error('Error parsing IaC Scanning report:', error);
+        return null;
+    }
 }
