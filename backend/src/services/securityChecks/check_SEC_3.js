@@ -507,7 +507,7 @@ async function checkDependencyScanningWithDetails(projectId, gitlabCIRaw, pipeli
                 severity: severity,
                 metadata: {
                     id: vuln.id,
-                    scanner: vuln.scanner?.name || 'GitLab Dependency Scanning',
+                    scanner: vuln.scanner?.name || 'Dependency Scanning',
                     location: vuln.location,
                     cve: vuln.cve,
                     component: dependencyName,
@@ -574,7 +574,7 @@ function parseDependencyScanningReport(reportData) {
             total: vulnerabilities.length,
             severityStats: severityStats,
             scanDate: data.scan?.end_time || data.scan?.start_time || new Date().toISOString(),
-            scanner: data.scan?.scanner?.name || (data.scan?.analyzer?.name || 'GitLab Dependency Scanning')
+            scanner: data.scan?.scanner?.name || (data.scan?.analyzer?.name || 'Dependency Scanning')
         };
     } catch (error) {
         console.error('Error parsing Dependency Scanning report:', error);
