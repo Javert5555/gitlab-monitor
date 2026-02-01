@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="project-detail">
     <div v-if="latestScan" class="section">
       <h2>Результаты последнего сканирования</h2>
@@ -360,5 +360,383 @@ const projectName = computed(() => {
 
 .severity-low {
   color: #3498db;
+}
+</style> -->
+
+
+
+<template>
+  <div class="project-detail">
+    <div v-if="latestScan" class="section">
+      <h2>Результаты последнего сканирования</h2>
+      <div class="security-checks">
+        <div 
+          v-for="check in latestScan.results" 
+          :key="check.id"
+          class="security-check"
+        >
+          <div class="check-header">
+            <h3 class="check-name">{{ check.name }}</h3>
+            <span class="check-id">{{ check.id }}</span>
+          </div>
+          
+          <div v-if="!check.results || check.results.length === 0" class="no-results">
+            Проверки не выполнялись
+          </div>
+          
+          <div v-else class="check-results">
+            <div 
+              v-for="(result, index) in check.results" 
+              :key="index"
+              class="check-result"
+              :class="getStatusClass(result.status)"
+            >
+              <div class="result-header">
+                <span class="result-item">{{ result.item }}</span>
+                <span class="result-status">{{ result.status }}</span>
+              </div>
+              <div v-if="result.details" class="result-details">
+                {{ result.details }}
+              </div>
+              <div v-if="result.severity" class="result-severity">
+                Уровень угрозы: 
+                <span :class="'severity-' + result.severity.toLowerCase()">
+                  {{ result.severity }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="hasScanHistory" class="section">
+      <h2>Тенденции изменения угроз</h2>
+      <TrendChart 
+          :scans="project.scans" 
+          :height="300"
+          :show-legend="true"
+          :title="'Динамика угроз в проекте ' + projectName"
+      />
+    </div>
+
+    <div class="section">
+      <h2>История сканирований</h2>
+      <div v-if="!project.scans || project.scans.length === 0" class="empty-state">
+        Сканирования не проводились
+      </div>
+      <div v-else class="scans-list">
+        <div 
+          v-for="scan in project.scans" 
+          :key="scan.id"
+          class="scan-item"
+        >
+          <div class="scan-header">
+            <span class="scan-date">{{ formatDate(scan.scannedAt) }}</span>
+            <RiskBadge :count="scan.summary?.totalRisks || 0" />
+          </div>
+          <div class="scan-summary">
+            <div class="risk-breakdown">
+              <span v-if="scan.summary?.critical" class="risk-count critical">
+                C: {{ scan.summary.critical }}
+              </span>
+              <span v-if="scan.summary?.high" class="risk-count high">
+                H: {{ scan.summary.high }}
+              </span>
+              <span v-if="scan.summary?.medium" class="risk-count medium">
+                M: {{ scan.summary.medium }}
+              </span>
+              <span v-if="scan.summary?.low" class="risk-count low">
+                L: {{ scan.summary.low }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import RiskBadge from './RiskBadge.vue'
+import TrendChart from './TrendChart.vue'
+
+const props = defineProps({
+  project: {
+    type: Object,
+    required: true
+  }
+})
+
+const latestScan = computed(() => {
+  if (!props.project.scans || props.project.scans.length === 0) return null
+  return props.project.scans[0]
+})
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleString('ru-RU')
+}
+
+const getStatusClass = (status) => {
+  const statusMap = {
+    'DANGER': 'status-danger',
+    'FAIL': 'status-danger',
+    'WARN': 'status-warn',
+    'PASS': 'status-pass',
+    'INFO': 'status-info'
+  }
+  return statusMap[status] || 'status-unknown'
+}
+
+const hasScanHistory = computed(() => {
+    return props.project.scans && props.project.scans.length > 1
+})
+
+const projectName = computed(() => {
+    return props.project.project?.name || `Проект ${props.project.project?.gitLabProjectId}`
+})
+
+
+</script>
+
+<style scoped>
+.project-detail {
+  display: grid;
+  gap: 2rem;
+}
+
+.section {
+  background: #1e1e2e;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid #3a3a4e;
+}
+
+.section h2 {
+  margin-bottom: 1.5rem;
+  color: #bb86fc;
+  border-bottom: 2px solid #3a3a4e;
+  padding-bottom: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #a0a0c0;
+  font-style: italic;
+  background: #2d2d44;
+  border-radius: 8px;
+  border: 1px dashed #3a3a4e;
+}
+
+.scans-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.scan-item {
+  padding: 1.5rem;
+  background: #2d2d44;
+  border: 1px solid #3a3a4e;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.scan-item:hover {
+  background: #3a3a4e;
+  transform: translateX(5px);
+  border-color: #bb86fc;
+}
+
+.scan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.scan-date {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.risk-breakdown {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.risk-count {
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.risk-count.critical {
+  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  color: white;
+}
+
+.risk-count.high {
+  background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+  color: white;
+}
+
+.risk-count.medium {
+  background: linear-gradient(135deg, #ffa000 0%, #ff6f00 100%);
+  color: white;
+}
+
+.risk-count.low {
+  background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+  color: white;
+}
+
+.security-checks {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.security-check {
+  background: #2d2d44;
+  border: 1px solid #3a3a4e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.check-header {
+  background: linear-gradient(135deg, #2d2d44 0%, #3a3a4e 100%);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #3a3a4e;
+}
+
+.check-name {
+  margin: 0;
+  color: #e0e0e0;
+  font-size: 1.1rem;
+}
+
+.check-id {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.no-results {
+  padding: 2rem;
+  text-align: center;
+  color: #a0a0c0;
+  font-style: italic;
+}
+
+.check-results {
+  padding: 1rem;
+}
+
+.check-result {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  border-left: 4px solid #3a3a4e;
+  background: #2d2d44;
+}
+
+.check-result.status-danger {
+  background: rgba(211, 47, 47, 0.375);
+  border-left-color: #d32f2f;
+}
+
+.check-result.status-warn {
+  background: rgba(245, 124, 0, 0.1);
+  border-left-color: #f57c00;
+}
+
+.check-result.status-pass {
+  background: rgba(56, 142, 60, 0.1);
+  border-left-color: #388e3c;
+}
+
+.check-result.status-info {
+  background: rgba(25, 118, 210, 0.1);
+  border-left-color: #1976d2;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.result-item {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.result-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-danger .result-status {
+  background: #d32f2f;
+  color: white;
+}
+
+.status-warn .result-status {
+  background: #f57c00;
+  color: white;
+}
+
+.status-pass .result-status {
+  background: #388e3c;
+  color: white;
+}
+
+.status-info .result-status {
+  background: #1976d2;
+  color: white;
+}
+
+.result-details {
+  color: #a0a0c0;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.result-severity {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #bbbbbb;
+}
+
+.severity-critical {
+  color: #ff5252;
+}
+
+.severity-high {
+  color: #ff9800;
+}
+
+.severity-medium {
+  color: #ffc107;
+}
+
+.severity-low {
+  color: #4fc3f7;
 }
 </style>

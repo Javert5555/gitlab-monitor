@@ -61,8 +61,11 @@ const formatDate = (dateString) => {
 .loading, .empty-state {
   text-align: center;
   padding: 3rem;
-  color: #7f8c8d;
+  color: #a0a0c0;
   font-size: 1.1rem;
+  background: #1e1e2e;
+  border-radius: 12px;
+  border: 1px solid #3a3a4e;
 }
 
 .projects-grid {
@@ -72,20 +75,23 @@ const formatDate = (dateString) => {
 }
 
 .project-card {
-  background: white;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  border: 1px solid #3a3a4e;
 }
 
 .project-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  border-color: #bb86fc;
+  background: linear-gradient(135deg, #2d2d44 0%, #3a3a4e 100%);
 }
 
 .project-info {
@@ -96,17 +102,17 @@ const formatDate = (dateString) => {
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: #e0e0e0;
 }
 
 .project-id {
-  color: #7f8c8d;
+  color: #a0a0c0;
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
 }
 
 .project-updated {
-  color: #95a5a6;
+  color: #8a8aa0;
   font-size: 0.8rem;
 }
 

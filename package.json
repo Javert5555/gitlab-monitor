@@ -26,5 +26,8 @@
   "description": "",
   "dependencies": {
     "concurrently": "^9.2.1"
+  },
+  "devDependencies": {
+    "semgrep": "^0.0.1"
   }
 }

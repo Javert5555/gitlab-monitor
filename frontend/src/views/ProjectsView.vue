@@ -52,28 +52,36 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+  border-radius: 12px;
+  border: 1px solid #3a3a4e;
 }
 
 .view-header h1 {
-  color: #2c3e50;
+  color: #bb86fc;
   margin: 0;
+  font-size: 2rem;
 }
 
 .refresh-button {
-  background: #27ae60;
+  background: linear-gradient(135deg, #03dac6 0%, #018786 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .refresh-button:hover:not(:disabled) {
-  background: #219a52;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
 }
 
 .refresh-button:disabled {
@@ -82,11 +90,12 @@ onMounted(() => {
 }
 
 .error-message {
-  background: #e74c3c;
+  background: linear-gradient(135deg, #b00020 0%, #cf6679 100%);
   color: white;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 2rem;
   text-align: center;
+  border: 1px solid #ff5252;
 }
 </style>
